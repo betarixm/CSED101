@@ -8,7 +8,7 @@ int main() { // main에 프로그램 구현
 
     int amount = 0; // 입력받는 원 화의 양
     int ex_rate = 0; // 입력받는 환율
-    int MUL = 100; // int 형을 이용하여 소수 둘째자리까지 표현하기 위한 보정 상수
+    int MUL = 100; // int 형을 이용하여 소수 둘째자리까지 표현하고, ceil 함수가 소수 셋째자리에서 올림할 수 있도록 하는 보정 상수
 
     // 원 화 입력
     printf("Enter the amount of exchange: ");
