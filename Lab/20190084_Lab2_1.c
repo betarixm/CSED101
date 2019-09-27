@@ -27,9 +27,10 @@ int add(int num1, int num2){
 }
 
 float average(int num1, int num2){
-	return (num1 + num2) / 2
+	return ((float)num1 + (float)num2) / 2;
 }
 
-void printResult(int x, int y, int sum, float avg){
-	printf("The sum of %d and %d is %d", x, y, sum);
-	printf("The average of numbers is %.1f", avg);
+void printResult(int x, int y, int sum, float avg) {
+    printf("The sum of %d and %d is %d\n", x, y, sum);
+    printf("The average of numbers is %.1f\n", avg);
+}
