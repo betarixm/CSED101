@@ -35,7 +35,7 @@ int main() { // main에 프로그램 구현
 }
 
 int exchange(int target, int *amount){ // target 단위의 달러 개수를 반환해주고, 반환한 만큼 amount를 감소시키는 함수
-    printf("%d $:    %d\n", target, *amount/target); // target 단위의 달러 개수 출력
+    printf("%d $:    %d\n", target/100, *amount/target); // target 단위의 달러 개수 출력
     *amount = *amount - target * (*amount/target); // 변환한 만큼 amount 차감
 
     return 0;
