@@ -3,8 +3,9 @@
 
 int exchange(int target, int *amount); // target 단위의 달러 개수를 반환해주고, 반환한 만큼 amount를 감소시키는 함수
 int exchange_cent(int target, int *amount); // exchange와 같은 역할을 하되, cent 단위로 printf 하기 위해 선언
+int exch(int target, int *amount);
 
-int main() { // main에 프로그램 구현
+int main(){ // main에 프로그램 구현
 
     int amount = 0; // 입력받는 원 화의 양
     int ex_rate = 0; // 입력받는 환율
@@ -21,28 +22,22 @@ int main() { // main에 프로그램 구현
     // 올림 수행
     amount = ceil(((double)(amount  * MUL)/ ex_rate)); // ceil 함수의 정상적인 작동을 위해 double으로 캐스팅. 그 후 amount를 달러로 변환.
 
-    exchange(20*MUL, &amount); // 20달러 단위로 변환
-    exchange(10*MUL, &amount); // 10달러 단위로 변환
-    exchange(5*MUL, &amount); // 5달러 단위로 변환
-    exchange(1*MUL, &amount); // 1달러 단위로 변환
-    exchange_cent((int)(0.5*MUL), &amount); // 50센트 단위로 변환
-    exchange_cent((int)(0.1*MUL), &amount); // 10센트 단위로 변환
-    exchange_cent((int)(0.01*MUL), &amount); // 1센트 단위로 변환
+    exch(20*MUL, &amount); // 20달러 단위로 변환
+    exch(10*MUL, &amount); // 10달러 단위로 변환
+    exch(5*MUL, &amount); // 5달러 단위로 변환
+    exch(1*MUL, &amount); // 1달러 단위로 변환
+    exch((int)(0.5*MUL), &amount); // 50센트 단위로 변환
+    exch((int)(0.1*MUL), &amount); // 10센트 단위로 변환
+    exch((int)(0.01*MUL), &amount); // 1센트 단위로 변환
 
     printf("Written by %c%c%c%c %c%c%c %c%c%c\n", 71, 119, 111, 110, 77, 105, 110, 74, 97, 101); // 아스키코드로 이름 출력
     
     return 0;
 }
 
-int exchange(int target, int *amount){ // target 단위의 달러 개수를 반환해주고, 반환한 만큼 amount를 감소시키는 함수
-    printf("%d $:    %d\n", target/100, *amount/target); // target 단위의 달러 개수 출력
-    *amount = *amount - target * (*amount/target); // 변환한 만큼 amount 차감
-
-    return 0;
-}
-
-int exchange_cent(int target, int *amount){ // exchange와 같은 역할을 하되, cent 단위로 printf 하기 위해 선언
-    printf("%d cent:    %d\n", target, *amount/target); // target 단위의 cent 개수 출력
+int exch(int target, int *amount){ // target 단위의 달러 개수를 반환해주고, 반환한 만큼 amount를 감소시키는 함수
+    int i = (target<500);
+    printf("%d %c%c%c%c:    %d\n", target/(100-99*i), 36 + i*63, 1 + i*100, 1 + i*109, 1 + i*115, *amount/target); // target 단위의 달러 개수 출력
     *amount = *amount - target * (*amount/target); // 변환한 만큼 amount 차감
 
     return 0;
