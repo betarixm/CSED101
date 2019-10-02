@@ -30,15 +30,14 @@ int main(){ // main에 프로그램 구현
     exch((int)(0.1*MUL), &amount); // 10센트 단위로 변환
     exch((int)(0.01*MUL), &amount); // 1센트 단위로 변환
 
-    printf("Written by %c%c%c%c %c%c%c %c%c%c\n", 71, 119, 111, 110, 77, 105, 110, 74, 97, 101); // 아스키코드로 이름 출력
+    printf("Written by %c%c%c%c%c%c%c%c%c%c%c%c\n", 71, 119, 111, 110, 32, 77, 105, 110, 32, 74, 97, 101); // 아스키코드로 이름 출력
     
     return 0;
 }
 
 int exch(int target, int *amount){ // target 단위의 달러 개수를 반환해주고, 반환한 만큼 amount를 감소시키는 함수
-    int i = (target<500);
-    printf("%d %c%c%c%c:    %d\n", target/(100-99*i), 36 + i*63, 1 + i*100, 1 + i*109, 1 + i*115, *amount/target); // target 단위의 달러 개수 출력
+    int d = (target<100);
+    printf("%d %c%c%c%c:    %d\n", target/(100-99*d), 36 + d*63, 1 + d*100, 1 + d*109, 1 + d*115, *amount/target); // target 단위의 달러 개수 출력
     *amount = *amount - target * (*amount/target); // 변환한 만큼 amount 차감
-
     return 0;
 }
