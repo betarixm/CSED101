@@ -20,7 +20,7 @@ int main(){ // main에 프로그램 구현
     scanf("%d", &ex_rate);
 
     // 올림 수행
-    amount = ceil(((double)(amount  * MUL)/ ex_rate)); // ceil 함수의 정상적인 작동을 위해 double으로 캐스팅. 그 후 amount를 달러로 변환.
+    amount = (int)ceil((double)((int)((double)amount/ex_rate*pow(10,3)))/10); // ceil 함수의 정상적인 작동을 위해 double으로 캐스팅. 그 후 amount를 달러로 변환.
 
     exch(20*MUL, &amount); // 20달러 단위로 변환
     exch(10*MUL, &amount); // 10달러 단위로 변환
@@ -37,6 +37,7 @@ int main(){ // main에 프로그램 구현
 
 int exch(int target, int *amount){ // target 단위의 달러 개수를 반환해주고, 반환한 만큼 amount를 감소시키는 함수
     int d = (target<100);
+
     printf("%d %c%c%c%c:   %d\n", target/(100-99*d), 36 + d*63, 1 + d*100, 1 + d*109, 1 + d*115, *amount/target); // target 단위의 달러 개수 출력
     *amount = *amount - target * (*amount/target); // 변환한 만큼 amount 차감
     return 0;
