@@ -29,7 +29,7 @@ def resolve_1_1(res):
 
 def check_1_1(amount, rate, r):
     res = 2000 * r[0] +  1000 * r[1] + 500 * r[2] + 100 * r[3] + 50 * r[4] + 10 * r[5] + 1 * r[6]
-    ans = ceil(floor(amount/rate*pow(10,3))/10)
+    ans = ceil(amount/rate*pow(10,2))
     if ans == res:
         return True
     else:
