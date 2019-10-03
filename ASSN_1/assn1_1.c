@@ -20,7 +20,7 @@ int main(){ // main에 프로그램 구현
     scanf("%d", &ex_rate);
 
     // 올림 수행
-    amount = ceil(((float)(amount  * MUL)/ ex_rate)); // ceil 함수의 정상적인 작동을 위해 double으로 캐스팅. 그 후 amount를 달러로 변환.
+    amount = ceil(((double)(amount  * MUL)/ ex_rate)); // ceil 함수의 정상적인 작동을 위해 double으로 캐스팅. 그 후 amount를 달러로 변환.
 
     exch(20*MUL, &amount); // 20달러 단위로 변환
     exch(10*MUL, &amount); // 10달러 단위로 변환

@@ -28,7 +28,13 @@ def resolve_1_1(res):
 
 def check_1_1(amount, rate, r):
     res = 2000 * r[0] +  1000 * r[1] + 500 * r[2] + 100 * r[3] + 50 * r[4] + 10 * r[5] + 1 * r[6]
-    ans = math.ceil(amount/rate * 100)
+    tmp = amount/rate * 100
+    ans = int()
+
+    if str(tmp).split(".")[0][0] == "0":
+        ans = tmp.floor()
+    else:
+        ans = math.ceil(tmp)
     if ans == res:
         return True
     else:
