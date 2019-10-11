@@ -66,4 +66,6 @@ char *l(int n, long long int *b1, long long int *b2, long long int *b3, long lon
     if (size * 1 <= n && n < size * 2) return (p2 + (n - size * 1));
     if (size * 2 <= n && n < size * 3) return (p3 + (n - size * 2));
     if (size * 3 <= n && n < size * 4) return (p4 + (n - size * 3));
+
+    return p1;
 }
