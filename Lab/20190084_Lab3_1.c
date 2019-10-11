@@ -25,9 +25,8 @@ float calc_average(int mid, int fnl){
 }
 
 char calc_grade(float avg){
-    return
-    ((avg >= 90) ? 'A' :
-    ((avg >= 80) ? 'B' :
-    ((avg >= 70) ? 'C' :
-    ((avg >= 60) ? 'D' : 'F'))));
+    return ((avg >= 90) ? 'A' :
+           ((avg >= 80) ? 'B' :
+           ((avg >= 70) ? 'C' :
+           ((avg >= 60) ? 'D' : 'F'))));
 }
