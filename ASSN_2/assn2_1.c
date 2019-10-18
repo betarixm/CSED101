@@ -1,4 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -65,6 +66,8 @@ int main(void){
     }
 
     printWinner(player1, player2); // 승자를 출력한다.
+
+    return 0;
 }
 
 int getResponse(){ // 사용자로부터 입력을 받아 반환한다.
@@ -122,9 +125,9 @@ int calcWinner(int player1, int player2){ // 승자 번호를 반환한다.
 void printWinner(int player1, int player2){ // 승자를 출력한다.
     int winner = calcWinner(player1, player2); // 승자 번호를 가져온다.
     if(winner == 0){
-        printf("\nDRAW P1 %d, P2 %d", player1, player2); // 동점일 경우 무승부 결과를 출력한다.
+        printf("\nDRAW P1 %d, P2 %d\n", player1, player2); // 동점일 경우 무승부 결과를 출력한다.
     } else {
-        printf("\nWIN P%d, P1 %d, P2 %d", winner, player1, player2); // 승부 결과를 출력한다.
+        printf("\nWIN P%d, P1 %d, P2 %d\n", winner, player1, player2); // 승부 결과를 출력한다.
     }
 
 }

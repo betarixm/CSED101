@@ -28,7 +28,7 @@ int main(void){
 
 	idx = seqSearch(input, target, 10);
 
-	if (resultIdx == -1){
+	if (idx == -1){
 		printf("Not Found\n");
 	} else {
 		printf("The index of %d is %d\n", target, idx);
