@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+void print_matrix(int ary[][3], int n);
+
 int main(){
     int i = 0;
     int j = 0;
@@ -11,4 +13,8 @@ int main(){
         }
         printf("\n");
     }
+}
+
+void print_matrix(int ary[][3], int n){
+
 }
