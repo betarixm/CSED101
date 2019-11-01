@@ -4,46 +4,46 @@
 int seqSearch(int arr[], int target, int size);
 
 int main(void){
-	int i = 0;
-	int target = 0;
-	int idx = 0;
-	int input[10] = { 0 };
+    int i = 0;
+    int target = 0;
+    int idx = 0;
+    int input[10] = { 0 };
 
-	printf("Input 10 integer values: ");
-	
-	for (i = 0; i < 10; i++){
-		scanf("%d", &input[i]);
-	}
-	
-	printf("Entered number is        ");
+    printf("Input 10 integer values: ");
 
-	for (i = 0; i < 10; i++){
-		printf("%d ", input[i]);
-	}
+    for (i = 0; i < 10; i++){
+        scanf("%d", &input[i]);
+    }
 
-	printf("\n");
-	
-	printf("Input an integer that you want to find: ");
-	scanf("%d", &target);
+    printf("Entered number is        ");
 
-	idx = seqSearch(input, target, 10);
+    for (i = 0; i < 10; i++){
+        printf("%d ", input[i]);
+    }
 
-	if (idx == -1){
-		printf("Not Found\n");
-	} else {
-		printf("The index of %d is %d\n", target, idx);
-	}
+    printf("\n");
 
-	return 0;
+    printf("Input an integer that you want to find: ");
+    scanf("%d", &target);
+
+    idx = seqSearch(input, target, 10);
+
+    if (idx == -1){
+        printf("Not Found\n");
+    } else {
+        printf("The index of %d is %d\n", target, idx);
+    }
+
+    return 0;
 }
 
 int seqSearch(int arr[], int target, int size){
-	int i = 0;
-	for(i = 0; i < size; i++){
-		if(arr[i] == target)
-			return i;
-	}
+    int i = 0;
+    for(i = 0; i < size; i++){
+        if(arr[i] == target)
+            return i;
+    }
 
-	return -1;
+    return -1;
 }
 	
