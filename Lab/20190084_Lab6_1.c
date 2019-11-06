@@ -1,3 +1,5 @@
+// macOS, Clion에서 작성.
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #define SIZE 20

@@ -1,3 +1,5 @@
+// macOS, Clion에서 작성.
+
 #define _CRT_SECURE_NO_WARNINGS
 #include<stdio.h>
 #define MAX 6
@@ -28,11 +30,10 @@ int main()
 }
 
 void bubble_sort(int a[], int size){
-    int step = 1;
-    int i = 0, j = 0;
+    int step = 0, j = 0;
     int target = 0;
 
-    for(i = 0; i < (size - 1); ++i && ++step){
+    for(step = 1; step < (size); ++step){
         for(j = (size - 1); j > target; j--){
             if(a[j] < a[j-1]){
                 swap(&a[j], &a[j-1]);
