@@ -23,12 +23,12 @@ void menu(int *mode);
 
 void init_board(int board[][COL]);
 
-void view_board(int board[][COL]);
+void view_board(int board[][9], int *scoreP1, int *scoreP2);
 
 int checkScore(int board[][COL], int playerNum);
 
 void turn(int board[][9], int *player, int *nextPlayer, int *playerNum, int *nextPlayerNum, int *AI_option_1,
-          int *AI_option_2);
+          int *AI_option_2, int *scoreP1, int *scoreP2);
 
 void PvP(int board[][COL]);
 
@@ -50,15 +50,13 @@ int isValid(int board[][COL], int row, int col);
 
 int maxTurn();
 
-void DEBUG_ARRAY(int board[][COL]);
-
 void swap(int *x, int *y);
 
 void boundary(int board[][9], int bound[], int row, int col);
 
 int countBoundary(const int bound[]);
 
-void AI_function(int *px, int *py, int board[][COL], int mode);
+void AI_function(int *px, int *py, int board[][COL], int AI_option);
 
 void AI_easy(int *pRow, int *pCol, int board[][COL]);
 
@@ -68,30 +66,50 @@ void AI_hard(int *pRow, int *pCol, int board[][COL]);
 
 void AI_menu(int *mode);
 
+void AvA(int board[][COL], int AI_option_1, int AI_option_2);
+
+int getScore(int board[][COL], int playerNum);
+
+void game(int board[][COL], int player, int nextPlayer, int AI_option_1, int AI_option_2);
+
+void setGame(int mode, int* player1, int* player2, int* AI_option_1, int* AI_option_2);
+
 int main() {
     int board[ROW][COL] = {0};
-    int mode = 0, AI_option = 0;
-    void (*mode_1)();
+    int mode = 0, AI_option_1 = 0, AI_option_2 = 0, player1 = 0, player2 = 0;
 
     srand(time(NULL));
     printf("Welcome to Dots and boxes!\n");
 
     init_board(board);
     menu(&mode);
+    setGame(mode, &player1, &player2, &AI_option_1, &AI_option_2);
+    game(board, player1, player2, AI_option_1, AI_option_2);
+    printf("Press Enter key to return to the Main Menu.");
 
+}
+
+void setGame(int mode, int* player1, int* player2, int* AI_option_1, int* AI_option_2){
     if (mode == 1) {
-        PvP(board);
+        *player1 = P;
+        *player2 = P;
     } else if (mode == 2) {
-        AI_menu(&AI_option);
-        PvA(board, AI_option);
+        *player1 = P;
+        *player2 = AI;
+        printf("Which difficulty do you want?\n");
+        AI_menu(AI_option_2);
     } else if (mode == 3) {
-
+        *player1 = AI;
+        *player2 = AI;
+        printf("Which difficulty do you want for AI 1?\n");
+        AI_menu(AI_option_1);
+        printf("Which difficulty do you want for AI 2?\n");
+        AI_menu(AI_option_2);
     } else if (mode == 4) {
 
     }
 
 }
-
 void getInput() {
 
 }
@@ -106,26 +124,26 @@ void init_board(int board[][COL]) {
     }
 }
 
-void view_board(int board[][COL]) {
+void view_board(int board[][9], int *scoreP1, int *scoreP2) {
     int row = 0, col = 0;
     int type = 0;
     int cur = 0;
-    int scoreP1 = 0;
-    int scoreP2 = 0;
 
     printf("\n");
+    *scoreP1 = 0;
+    *scoreP2 = 0;
     for (row = 1; row < ROW; row += 2) {
         for (col = 1; col < COL; col += 2) {
             cur = board[row][col];
             if (cur == P1) {
-                scoreP1++;
+                *scoreP1 += 1;
             } else if (cur == P2) {
-                scoreP2++;
+                *scoreP2 += 1;
             }
         }
     }
     printLine();
-    printf("%6d       vs%9d\n", scoreP1, scoreP2);
+    printf("%6d       vs%9d\n", *scoreP1, *scoreP2);
     printLine();
 
     for (row = 0; row < ROW; row++) {
@@ -191,12 +209,23 @@ int checkScore(int board[][COL], int playerNum) {
     return bonus;
 }
 
+int getScore(int board[][COL], int playerNum) {
+    int row = 0, col = 0;
+    int score = 0;
+    for (row = 1; row < ROW; row += 2) {
+        for (col = 1; col < COL; col += 2) {
+            score += (board[row][col] == playerNum);
+        }
+    }
+
+    return score;
+}
+
 void turn(int board[][9], int *player, int *nextPlayer, int *playerNum, int *nextPlayerNum, int *AI_option_1,
-          int *AI_option_2) { // Turn 관련 함수
+          int *AI_option_2, int *scoreP1, int *scoreP2) { // Turn 관련 함수
     int bonus = 0;
     int isNumNeeded = 0;
     int row = 0, col = 0;
-
     isNumNeeded = ((*player + *nextPlayer) != (P + AI));
     printTurn(*player, *playerNum, isNumNeeded);
 
@@ -212,15 +241,21 @@ void turn(int board[][9], int *player, int *nextPlayer, int *playerNum, int *nex
         }
 
     } else if (*player == AI) {
-        sleep(1);
-        AI_function(&row, &col, board, AI_option_1);
+        if(*player == *nextPlayer){
+            sleep(0.5);
+        } else {
+            sleep(1);
+        }
+
+        AI_function(&row, &col, board, *AI_option_1);
+
         printf("The selected position by AI is %d %d\n", row, col);
     }
 
     board[row][col] = *playerNum;
 
     bonus = checkScore(board, *playerNum);
-    view_board(board);
+    view_board(board, scoreP1, scoreP2);
 
     if (bonus == 0) {
         swap(playerNum, nextPlayerNum);
@@ -235,13 +270,16 @@ void PvP(int board[][COL]) {
     int nextPlayer = P;
     int playerNum = 1;
     int nextPlayerNum = 2;
+    int scoreP1 = 0, scoreP2 = 0;
 
     init_board(board);
-    view_board(board);
+    view_board(board, &scoreP1, &scoreP2);
 
     for (count = 0; count < maxTurn(); count++) {
-        turn(board, &player, &nextPlayer, &playerNum, &nextPlayerNum, 0, NULL);
+        turn(board, &player, &nextPlayer, &playerNum, &nextPlayerNum, 0, 0, &scoreP1, &scoreP2);
     }
+
+
 
 }
 
@@ -251,23 +289,80 @@ void PvA(int board[][COL], int AI_option_1) {
     int nextPlayerNum = 2;
     int player = P;
     int nextPlayer = AI;
+    int scoreP1 = 0, scoreP2 = 0;
+
     init_board(board);
-    view_board(board);
+    view_board(board, &scoreP1, &scoreP2);
 
     for (count = 0; count < maxTurn(); count++) {
-        turn(board, &player, &nextPlayer, &playerNum, &nextPlayerNum, &AI_option_1, NULL);
+        turn(board, &player, &nextPlayer, &playerNum, &nextPlayerNum, &AI_option_1, 0, &scoreP1, &scoreP2);
     }
+
+
 }
 
-void AvA(int board[][COL], int mode1, int mode2){
+void AvA(int board[][COL], int AI_option_1, int AI_option_2){
     int count = 0;
     int playerNum = 1;
     int nextPlayerNum = 2;
     int player = AI;
     int nextPlayer = AI;
+    int scoreP1 = 0, scoreP2 = 0;
 
     init_board(board);
-    view_board(board);
+    view_board(board, &scoreP1, &scoreP2);
+
+    for (count = 0; count < maxTurn(); count++) {
+        turn(board, &player, &nextPlayer, &playerNum, &nextPlayerNum, &AI_option_1, &AI_option_2, &scoreP1, &scoreP2);
+    }
+}
+
+void game(int board[][COL], int player, int nextPlayer, int AI_option_1, int AI_option_2){
+    printf("PLAYER1: %d PLAYER2: %d\n", player, nextPlayer);
+    int count = 0;
+    int playerNum = 1;
+    int nextPlayerNum = 2;
+    int scoreP1 = 0, scoreP2 = 0;
+
+    int player1_tmp = player;
+    int player2_tmp = nextPlayer;
+
+    int playerNum1_tmp = playerNum;
+    int playerNum2_tmp = nextPlayerNum;
+
+    init_board(board);
+    view_board(board, &scoreP1, &scoreP2);
+
+    for (count = 0; count < maxTurn(); count++) {
+        turn(board, &player, &nextPlayer, &playerNum, &nextPlayerNum, &AI_option_1, &AI_option_2, &scoreP1, &scoreP2);
+    }
+
+    if(scoreP1 == scoreP2){
+        printf("DRAW!\n");
+    } else if (scoreP1 < scoreP2) {
+        if(player2_tmp == P){
+            printf("Player ");
+        } else if (player2_tmp == AI){
+            printf("AI ");
+        }
+
+        if(player1_tmp == player2_tmp){
+            printf("%d ", playerNum2_tmp);
+        }
+
+    } else {
+        if(player1_tmp == P){
+            printf("Player ");
+        } else if (player1_tmp == AI){
+            printf("AI ");
+        }
+
+        if(player1_tmp == player2_tmp){
+            printf("%d ", playerNum1_tmp);
+        }
+    }
+
+    printf("Wins!\n");
 
 
 }
@@ -312,7 +407,6 @@ void openBoundary(int board[][COL], int* pRow, int* pCol, int row, int col){
             tmpRow = row + i;
             tmpCol = col + j;
             isLine = ((checkType(tmpRow, tmpCol) == LINE_VERT) || (checkType(tmpRow, tmpCol) == LINE_HORI));
-            printf("%d %d is Line? %d!", tmpRow, tmpCol, isLine);
             if(isLine && (board[tmpRow][tmpCol] == 0)){
                 *pRow = tmpRow;
                 *pCol = tmpCol;
@@ -322,6 +416,7 @@ void openBoundary(int board[][COL], int* pRow, int* pCol, int row, int col){
 }
 
 void AI_easy(int *pRow, int *pCol, int board[][COL]) {
+
     getRandPoint(pRow, pCol, board);
 }
 
@@ -335,11 +430,8 @@ void AI_normal(int *pRow, int *pCol, int board[][COL]) {
     for (row = 1; row < ROW; row += 2) {
         for (col = 1; col < COL; col += 2) {
             boundary(board, bound, row, col);
-            if(countBoundary(bound) == 3){
-                printf("FIND OPEN BOUNDARY!\n");
+            if(countBoundary(bound) == 3){;
                 openBoundary(board, pRow, pCol, row, col);
-                printf("CELL: %d %d \n", row, col);
-                printf("EDGE: %d %d \n", *pRow, *pCol);
                 break;
             }
         }
@@ -355,14 +447,15 @@ void AI_hard(int *pRow, int *pCol, int board[][COL]) {
 
 }
 
-void AI_function(int *px, int *py, int board[][COL], int mode) {
-    if (mode == EASY) {
+void AI_function(int *px, int *py, int board[][COL], int AI_option) {
+    if (AI_option == EASY) {
         AI_easy(px, py, board);
-    } else if (mode == NORMAL) {
+    } else if (AI_option == NORMAL) {
         AI_normal(px, py, board);
-    } else if (mode == HARD) {
+    } else if (AI_option == HARD) {
         AI_hard(px, py, board);
     }
+
 }
 
 void print_record() {
