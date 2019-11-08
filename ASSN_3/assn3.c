@@ -76,16 +76,29 @@ void setGame(int mode, int* player1, int* player2, int* AI_option_1, int* AI_opt
 
 int main() {
     int board[ROW][COL] = {0};
-    int mode = 0, AI_option_1 = 0, AI_option_2 = 0, player1 = 0, player2 = 0;
+    int mode = 4, AI_option_1 = 0, AI_option_2 = 0, player1 = 0, player2 = 0, input = 0;
 
     srand(time(NULL));
     printf("Welcome to Dots and boxes!\n");
 
-    init_board(board);
-    menu(&mode);
-    setGame(mode, &player1, &player2, &AI_option_1, &AI_option_2);
-    game(board, player1, player2, AI_option_1, AI_option_2);
-    printf("Press Enter key to return to the Main Menu.");
+    do{
+        init_board(board);
+        menu(&mode);
+        if(mode == 4){
+            break;
+        }
+        setGame(mode, &player1, &player2, &AI_option_1, &AI_option_2);
+        if(AI_option_1 == 4 || AI_option_2 == 4){
+            continue;
+        }
+        game(board, player1, player2, AI_option_1, AI_option_2);
+        printf("Press Enter key to return to the Main Menu.");
+        getchar();
+        while(getchar() != '\n');
+    } while (1);
+
+    printf("Thank you for playing Dots and Boxes!");
+    return 0;
 
 }
 
@@ -98,13 +111,22 @@ void setGame(int mode, int* player1, int* player2, int* AI_option_1, int* AI_opt
         *player2 = AI;
         printf("Which difficulty do you want?\n");
         AI_menu(AI_option_2);
+        if(*AI_option_1 == 4){
+            return;
+        }
     } else if (mode == 3) {
         *player1 = AI;
         *player2 = AI;
         printf("Which difficulty do you want for AI 1?\n");
         AI_menu(AI_option_1);
+        if(*AI_option_1 == 4){
+            return;
+        }
         printf("Which difficulty do you want for AI 2?\n");
         AI_menu(AI_option_2);
+        if(*AI_option_2 == 4){
+            return;
+        }
     } else if (mode == 4) {
 
     }
@@ -318,7 +340,6 @@ void AvA(int board[][COL], int AI_option_1, int AI_option_2){
 }
 
 void game(int board[][COL], int player, int nextPlayer, int AI_option_1, int AI_option_2){
-    printf("PLAYER1: %d PLAYER2: %d\n", player, nextPlayer);
     int count = 0;
     int playerNum = 1;
     int nextPlayerNum = 2;
@@ -511,7 +532,9 @@ void AI_menu(int *mode) {
     while (1) {
         getAIMenu(mode);
         if (*mode == 1 || *mode == 2 || *mode == 3 || *mode == 4) {
-            *mode = (*mode == 1) ? (EASY) : (((*mode == 2) ? (NORMAL) : (HARD)));
+            *mode = (*mode == 1) ? (EASY) : (
+                    ((*mode == 2) ? (NORMAL) : (
+                    ((*mode == 3) ? (HARD) : (*mode)))));
             break;
         } else {
             printf("Not valid input. Please try again.\n\n");
