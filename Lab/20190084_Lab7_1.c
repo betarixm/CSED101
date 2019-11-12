@@ -1,3 +1,5 @@
+// macOS CLion에서 작성됨.
+
 #include <stdio.h>
 #define SIZE 10
 

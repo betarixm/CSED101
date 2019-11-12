@@ -1,3 +1,6 @@
+// macOS CLion에서 작성됨.
+
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include "calc.h"
 
