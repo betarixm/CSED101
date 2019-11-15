@@ -15,10 +15,17 @@ int main(){
     printf("Enter the size of square: ");
     scanf("%d", &size);
 
-    arr = (int **)calloc(size, sizeof(int));
+    arr = (int **)malloc(size * sizeof(int *));
+
+    if (arr == NULL){
+        printf("ERROR DURING GET ADDR!\n");
+    }
 
     for(row = 0; row < size; row++){
         arr[row] = (int*)calloc(size, sizeof(int));
+        if(arr[row] == NULL){
+            printf("ERROR DURING GET ADDR 2!\n");
+        }
     }
 
     for(row = 0; row < size; row++){
