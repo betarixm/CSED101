@@ -22,15 +22,16 @@
 #define MAX_TURN 40
 #define MAX_SIMUL 100
 
-#define DEPTH 5
+#define DEPTH 6
 
 void menu(int *mode);
 
+int max(int a, int b);
+int min(int a, int b);
 int minimax(int board[][COL], int lines[][2], int *pRow, int *pCol, int player1_Num, int player2_Num, int isMyTurn, int prevScore, int depth);
 int minimax_v2(int board[][COL], int lines[][2], int *pRow, int *pCol, int player1_Num, int player2_Num, int isMyTurn, int prevScore, int depth);
-
 void init_board(int board[][COL]);
-
+int alpha_beta_minimax(int board[][COL], int lines[][2], int *pRow, int *pCol, int player1_Num, int player2_Num, int isPlayersTurn, int prevScore, int depth, int alpha, int beta);
 void view_board(const int board[][9], int *scoreP1, int *scoreP2);
 
 int checkScore(int board[][COL], int playerNum);
@@ -101,6 +102,7 @@ int main() {
             continue;
         }
         game(board, player1, player2, AI_option_1, AI_option_2);
+        // game(board, AI, P, HARD, HARD);
         printf("Press Enter key to return to the Main Menu.");
         getchar();
         while (getchar() != '\n');
@@ -744,6 +746,7 @@ void print_board(int board[ROW][COL]){
         printf("\n");
     }
 }
+
 int minimax_v3(int board[][COL], int lines[][2], int *pRow, int *pCol, int player1_Num, int player2_Num, int isPlayersTurn, int prevScore, int depth) {
 
     int row = 0, col = 0, pointValue = 1, tmp_player1 = player1_Num, tmp_player2 = player2_Num;
@@ -861,16 +864,163 @@ int minimax_v3(int board[][COL], int lines[][2], int *pRow, int *pCol, int playe
 
 }
 
+int alpha_beta_minimax(int board[][COL], int lines[][2], int *pRow, int *pCol, int player1_Num, int player2_Num, int isPlayersTurn, int prevScore, int depth, int alpha, int beta) {
+
+    int row = 0, col = 0, pointValue = 1, tmp_player1 = player1_Num, tmp_player2 = player2_Num;
+    int simulBoard[ROW][COL] = {0};
+    int bonus = 0, currentScore = 0, countLine = 0, lenMoves = 0, nextScore = 0, bestScore = 0, i = 0, j = 0;
+    int moves[MAX_TURN][2] = {0};
+    int isValidLine = 0;
+    int boundary[4] = {0};
+    int bestRow = 0, bestCol = 0;
+    int testRow = 0, testCol = 0, best = 1000;
+
+    if(depth <= 0){
+        return prevScore;
+    } else {
+
+        if(isPlayersTurn){
+            best = best * -1;
+        }
+        for (i = 0; i < MAX_TURN; i++){
+            row = lines[i][0];
+            col = lines[i][1];
+
+            if(isValid(board, row, col)){
+                copyBoard(board, simulBoard);
+
+                if(isPlayersTurn){
+                    simulBoard[row][col] = player1_Num;
+                    bonus = checkScore(simulBoard, player1_Num);
+                } else {
+                    simulBoard[row][col] = player2_Num;
+                    bonus = checkScore(simulBoard, player2_Num);
+                }
+
+                currentScore = calcScore(simulBoard, player1_Num, player2_Num);
+                for(j = 0; j < MAX_TURN; j++){
+                    if(isValid(simulBoard, lines[j][0], lines[j][1])){
+                        ++countLine;
+                    }
+                }
+
+                if(countLine == 0){
+                    moves[lenMoves][0] = currentScore;
+                    moves[lenMoves++][1] = -1;
+                } else {
+                    if(depth >= (DEPTH)){
+                        // printf("Case %d %d\n", row, col);
+                    }
+
+                    nextScore = alpha_beta_minimax(simulBoard, lines, pRow, pCol, player1_Num, player2_Num, ((bonus && isPlayersTurn) || ((bonus == 0) && (isPlayersTurn == 0))), currentScore, depth - 1, alpha, beta);
+
+
+                    if(isPlayersTurn){
+                        best = max(best, nextScore);
+                        alpha = max(alpha, best);
+                    } else {
+                        best = min(best, nextScore);
+                        beta = min(beta, best);
+                    }
+
+                    moves[lenMoves][0] = nextScore;
+                    moves[lenMoves++][1] = i;
+
+                    if (beta <= alpha){
+                        break;
+                    }
+                }
+                if(depth > 1){
+                    //printf("[+] Depth %d Row %d Col %d...\n", depth, row, col);
+                }
+                // print_moves(moves);
+            }
+        }
+
+        // printf("Dep %d len %d\n", depth, lenMoves);
+
+        bestScore = moves[0][0];
+        *pRow = lines[moves[0][1]][0];
+        *pCol = lines[moves[0][1]][1];
+        for (i = 0; i < lenMoves; i++){
+            bestRow = lines[moves[i][1]][0];
+            bestCol = lines[moves[i][1]][1];
+            isValidLine = isValid(board, bestRow, bestCol);
+
+            if(depth == DEPTH){
+                // printf("Dep: %d, i: %d, isPlayersTurn: %d, row: %d, col: %d, bestScore: %d, targetScore: %d, nextDepMove: %d\n", depth, i, isPlayersTurn, bestRow, bestCol, bestScore, moves[i][0], moves[i][1]);
+            }
+            if(isPlayersTurn == 1){
+                if(moves[i][0] > bestScore){
+                    // printf("[+] TEST %d LAST BEST %d\n", moves[i][0], bestScore);
+                    bestScore = moves[i][0];
+                    *pRow = lines[moves[i][1]][0];
+                    *pCol = lines[moves[i][1]][1];
+                    if(depth == DEPTH - 1){
+                        // printf("[+] DEBUG SCORE %d ROW %d COL %d\n", bestScore, bestRow, bestCol);
+                    }
+                }
+            } else {
+                if((moves[i][0] < bestScore)){
+                    // printf("[+] TEST %d LAST BEST %d\n", moves[i][0], bestScore);
+                    bestScore = moves[i][0];
+                    *pRow = lines[moves[i][1]][0];
+                    *pCol = lines[moves[i][1]][1];
+                }
+            }
+
+
+        }
+
+        if(isValid(board, *pRow, *pCol) == 0){
+            getRandPoint(pRow, pCol, board);
+        }
+
+        int a, b;
+        if(depth > 1){
+            // view_board(simulBoard, &a, &b);
+            // print_board(simulBoard);
+            // printf("[+] Best! depth: %d, Score: %d, row: %d, col: %d, isMyTurn: %d, tmp_player1: %d\n", depth, bestScore, *pRow, *pCol, isPlayersTurn, tmp_player1);
+        }
+
+        return bestScore;
+
+    }
+
+}
+
+
 void AI_function(int *px, int *py, int board[][9], int lines[][2], int AI_option, int meNum, int otherNum, int currentTurn) {
+    int depth = DEPTH;
     if (AI_option == EASY) {
         AI_easy(px, py, board);
     } else if (AI_option == NORMAL) {
         AI_normal(px, py, board);
     } else if (AI_option == HARD) {
-        minimax_v3(board, lines, px, py, meNum, otherNum, 1, 0, DEPTH);
-        // minimax(board, lines, px, py, meNum, otherNum, 1, 0, 3);
-        // int minimax(int board[][COL], int *pRow, int *pCol, int player1_Num, int player2_Num, int isMyTurn, int prevScore, int depth)
-        //AI_hard(px, py, board, meNum, otherNum, currentTurn);
+        /*
+         * if(currentTurn > 30){
+            minimax_v3(board, lines, px, py, meNum, otherNum, 1, 0, DEPTH);
+        } else if (currentTurn > 20){
+            minimax_v3(board, lines, px, py, meNum, otherNum, 1, 0, DEPTH);
+        } else if (currentTurn > 10) {
+            minimax_v3(board, lines, px, py, meNum, otherNum, 1, 0, DEPTH - 1);
+        } else {
+            minimax_v3(board, lines, px, py, meNum, otherNum, 1, 0, DEPTH - 2);
+        }
+         */
+
+        if(currentTurn < 15){
+            depth = DEPTH - 1;
+        } else if (currentTurn < 25) {
+            depth = DEPTH;
+        } else {
+            depth = DEPTH + 1;
+        }
+
+        alpha_beta_minimax(board, lines, px, py, meNum, otherNum, 1, 0, depth, -999, 999);
+
+
+        // alpha_beta_minimax_starter(board, lines, px, py, meNum, otherNum, 1, 0, DEPTH);
     }
 
 }
@@ -976,7 +1126,7 @@ int isOdd(int x) {
 }
 
 int isValid(int board[][COL], int row, int col) {
-    return ((isLine(row, col)) && (board[row][col] == 0));
+    return ((isLine(row, col)) && (board[row][col] == 0) && (row < ROW) && (col <COL));
 }
 
 int maxTurn() {
@@ -991,3 +1141,10 @@ void swap(int *x, int *y) {
     *y = tmp;
 }
 
+int max(int a, int b){
+    return (a>b)?(a):(b);
+}
+
+int min(int a, int b){
+    return (a<b)?(a):(b);
+}
