@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#define _CRT_SECURE_NO_WARNINGS
 
 void print_array(int *arr, int size);
 void input_array(int *arr, int size);
