@@ -24,15 +24,13 @@
 
 void game(int player1, int player2, int AI_option_1, int AI_option_2);
 
-void turn(int board[][COL], int lines[][2], int *player1, int *player2, int *player1_num, int *player2_num, int *AI_option_1, int *AI_option_2, int *scoreP1, int *scoreP2, int turnNum, FILE *file);
+void turn(int board[][COL], int lines[][2], int *player, int *nextPlayer, int *playerNum, int *nextPlayerNum, int *AI_option_1, int *AI_option_2, int *scoreP1, int *scoreP2, int currentTurn, FILE *file);
 
 void init_lines(int lines[][2]);
 
 void init_board(int board[][COL]);
 
 void view_board(const int board[][9], int *scoreP1, int *scoreP2);
-
-void copy_board(const int src[][COL], int dst[][COL]);
 
 int setDifficulty(int *AI_option, int playerNum);
 
@@ -44,7 +42,7 @@ int checkScore(int board[][COL], int playerNum);
 
 int checkType(int row, int col);
 
-int calcValue(const int board[][COL], int player1_num, int player2_num);
+int calcValue(const int board[][COL], int playerNum, int nextPlayerNum);
 
 void inputPlayer(const int board[][COL], int* row, int* col);
 
@@ -68,17 +66,19 @@ void AI_hard(const int board[][COL], int lines[][2], int *px, int *py, int playe
 
 int alpha_beta_minimax(const int board[][COL], int lines[][2], int *pRow, int *pCol, int player1_Num, int player2_Num, int isPlayersTurn, int prevScore, int depth, int alpha, int beta);
 
+void copyBoard(const int src[][COL], int dst[][COL]);
+
 void print_record(int row, int col, FILE *file);
 
 void printLine();
 
 void printMenu();
 
-void printMenu_AI();
+void printAIMenu();
 
 void getMenu(int *menu);
 
-void getMenu_AI(int *menu);
+void getAIMenu(int *menu);
 
 int inputMenu(int *mode, int option);
 
@@ -154,31 +154,31 @@ void game(int player1, int player2, int AI_option_1, int AI_option_2) {
     printResult(scoreP1, scoreP2, tmp_player1, tmp_player2, tmp_player1_num, tmp_player2_num);
 }
 
-void turn(int board[][COL], int lines[][2], int *player1, int *player2, int *player1_num, int *player2_num, int *AI_option_1,
-          int *AI_option_2, int *scoreP1, int *scoreP2, int turnNum, FILE *file) {
+void turn(int board[][COL], int lines[][2], int *player, int *nextPlayer, int *playerNum, int *nextPlayerNum, int *AI_option_1,
+          int *AI_option_2, int *scoreP1, int *scoreP2, int currentTurn, FILE *file) { // Turn 관련 함수
     int bonus = 0, isSamePlayer = 0, row = 0, col = 0, sleepTime = 0;
 
-    isSamePlayer = (*player1 == *player2);
+    isSamePlayer = (*player == *nextPlayer);
 
-    if (*player1 == P) {
-        printTurn(*player1, *player1_num, isSamePlayer);
+    if (*player == P) {
+        printTurn(*player, *playerNum, isSamePlayer);
         inputPlayer(board, &row, &col);
-    } else if (*player1 == AI) {
+    } else if (*player == AI) {
         sleepTime = (isSamePlayer)?(500000):(1000000);
         usleep(sleepTime);
-        printTurn(*player1, *player1_num, isSamePlayer);
-        AI_function(&row, &col, board, lines,  *AI_option_1, *player1_num, *player2_num, turnNum);
-        printf("The selected position by AI%c%c is %d %d\n", (isSamePlayer)?(' '):(1), (isSamePlayer)?(*player1_num + '0'):(1), row, col);
+        printTurn(*player, *playerNum, isSamePlayer);
+        AI_function(&row, &col, board, lines,  *AI_option_1, *playerNum, *nextPlayerNum, currentTurn);
+        printf("The selected position by AI %c is %d %d\n", (isSamePlayer)?(*playerNum + 48):(1), row, col);
     }
 
-    board[row][col] = *player1_num;
+    board[row][col] = *playerNum;
     print_record(row, col, file);
-    bonus = checkScore(board, *player1_num);
+    bonus = checkScore(board, *playerNum);
     view_board(board, scoreP1, scoreP2);
 
     if (bonus == 0) {
-        swap(player1_num, player2_num);
-        swap(player1, player2);
+        swap(playerNum, nextPlayerNum);
+        swap(player, nextPlayer);
         swap(AI_option_1, AI_option_2);
     }
 }
@@ -246,15 +246,6 @@ void view_board(const int board[][9], int *scoreP1, int *scoreP2) {
 
 }
 
-void copy_board(const int src[][COL], int dst[][COL]) {
-    int row = 0, col = 0;
-    for (row = 0; row < ROW; row++) {
-        for (col = 0; col < COL; col++) {
-            dst[row][col] = src[row][col];
-        }
-    }
-}
-
 int setDifficulty(int *AI_option, int playerNum){
     printf("Which difficulty do you want");
     if(playerNum > 0){
@@ -274,6 +265,7 @@ void setGame(int mode, int *player1, int *player2, int *AI_option_1, int *AI_opt
     if (mode == 2) {
         setDifficulty(AI_option_2, 0);
     } else if (mode == 3) {
+
         if (setDifficulty(AI_option_1, 1) && *AI_option_1 == 4) {return;}
         if (setDifficulty(AI_option_2, 2) && *AI_option_2 == 4) {return;}
     }
@@ -310,11 +302,11 @@ int checkType(int row, int col) {
            ((isOdd(row))?(LINE_VERT):(CORNER));
 }
 
-int calcValue(const int board[][COL], int player1_num, int player2_num) {
+int calcValue(const int board[][COL], int playerNum, int nextPlayerNum) {
     int row = 0, col = 0, score = 0;
     for (row = 1; row < ROW; row += 2) {
         for (col = 1; col < COL; col += 2) {
-            score = score + (board[row][col] == player1_num) - (board[row][col] == player2_num);
+            score = score + (board[row][col] == playerNum) - (board[row][col] == nextPlayerNum);
         }
     }
 
@@ -388,6 +380,20 @@ void getRandPoint(const int board[][COL], int *pRow, int *pCol) {
     } while(isValid(board, *pRow, *pCol) == 0);
 }
 
+void openBoundary(const int board[][COL], int *pRow, int *pCol, int row, int col) {
+    int i = 0, j = 0, tmpRow = 0, tmpCol = 0;
+    for (i = -1; i < 2; i++) {
+        for (j = -1; j < 2; j++) {
+            tmpRow = row + i;
+            tmpCol = col + j;
+            if (isLine(tmpRow, tmpCol) && (board[tmpRow][tmpCol] == 0)) {
+                *pRow = tmpRow;
+                *pCol = tmpCol;
+            }
+        }
+    }
+}
+
 void AI_function(int *px, int *py, const int board[][9], int lines[][2], int AI_option, int player1_num, int player2_num, int turn_num) {
     if (AI_option == EASY) {
         AI_easy(board, px, py);
@@ -396,6 +402,7 @@ void AI_function(int *px, int *py, const int board[][9], int lines[][2], int AI_
     } else if (AI_option == HARD) {
         AI_hard(board, lines, px, py, player1_num, player2_num, turn_num);
     }
+
 }
 
 void AI_easy(const int board[][COL], int *pRow, int *pCol) {
@@ -439,21 +446,21 @@ void AI_hard(const int board[][COL], int lines[][2], int *px, int *py, int playe
 
 int alpha_beta_minimax(const int board[][COL], int lines[][2], int *pRow, int *pCol, int player1_Num, int player2_Num, int isPlayersTurn, int prevScore, int depth, int alpha, int beta) {
 
-    int row = 0, col = 0, extraTurn = 0, expectedValue = 0, countValidLine = 0, lenMoves = 0, childValue = 0, optimalValue = 0, i = 0, j = 0, optimalChildValue = 1000;
+    int row = 0, col = 0, extraTurn = 0, currentScore = 0, countLine = 0, lenMoves = 0, expectedValue = 0, optimalValue = 0, i = 0, j = 0, best = 1000;
     int simulBoard[ROW][COL] = {0};
-    int childList[MAX_TURN][2] = {0};
+    int moves[MAX_TURN][2] = {0};
 
     if(depth <= 0){
         return prevScore;
     } else {
-        optimalChildValue = (isPlayersTurn)?(-1000):(1000);
+        best = (isPlayersTurn)?(-1000):(1000);
 
         for (i = 0; i < MAX_TURN; i++){
             row = lines[i][0];
             col = lines[i][1];
 
             if(isValid(board, row, col)){
-                copy_board(board, simulBoard);
+                copyBoard(board, simulBoard);
 
                 if(isPlayersTurn){
                     simulBoard[row][col] = player1_Num;
@@ -463,29 +470,29 @@ int alpha_beta_minimax(const int board[][COL], int lines[][2], int *pRow, int *p
                     extraTurn = checkScore(simulBoard, player2_Num);
                 }
 
-                expectedValue = calcValue(simulBoard, player1_Num, player2_Num);
+                currentScore = calcValue(simulBoard, player1_Num, player2_Num);
                 for(j = 0; j < MAX_TURN; j++){
                     if(isValid(simulBoard, lines[j][0], lines[j][1])){
-                        ++countValidLine;
+                        ++countLine;
                     }
                 }
 
-                if(countValidLine == 0){
-                    childList[lenMoves][0] = expectedValue;
-                    childList[lenMoves++][1] = -1;
+                if(countLine == 0){
+                    moves[lenMoves][0] = currentScore;
+                    moves[lenMoves++][1] = -1;
                 } else {
-                    childValue = alpha_beta_minimax(simulBoard, lines, pRow, pCol, player1_Num, player2_Num, ((extraTurn && isPlayersTurn) || ((extraTurn == 0) && (isPlayersTurn == 0))), expectedValue, depth - 1, alpha, beta);
+                    expectedValue = alpha_beta_minimax(simulBoard, lines, pRow, pCol, player1_Num, player2_Num, ((extraTurn && isPlayersTurn) || ((extraTurn == 0) && (isPlayersTurn == 0))), currentScore, depth - 1, alpha, beta);
 
                     if(isPlayersTurn){
-                        optimalChildValue = max(optimalChildValue, childValue);
-                        alpha = max(alpha, optimalChildValue);
+                        best = max(best, expectedValue);
+                        alpha = max(alpha, best);
                     } else {
-                        optimalChildValue = min(optimalChildValue, childValue);
-                        beta = min(beta, optimalChildValue);
+                        best = min(best, expectedValue);
+                        beta = min(beta, best);
                     }
 
-                    childList[lenMoves][0] = childValue;
-                    childList[lenMoves++][1] = i;
+                    moves[lenMoves][0] = expectedValue;
+                    moves[lenMoves++][1] = i;
 
                     if (beta <= alpha){
                         break;
@@ -494,21 +501,21 @@ int alpha_beta_minimax(const int board[][COL], int lines[][2], int *pRow, int *p
             }
         }
 
-        optimalValue = childList[0][0];
-        *pRow = lines[childList[0][1]][0];
-        *pCol = lines[childList[0][1]][1];
+        optimalValue = moves[0][0];
+        *pRow = lines[moves[0][1]][0];
+        *pCol = lines[moves[0][1]][1];
         for (i = 0; i < lenMoves; i++){
             if(isPlayersTurn){
-                if(childList[i][0] > optimalValue){
-                    optimalValue = childList[i][0];
-                    *pRow = lines[childList[i][1]][0];
-                    *pCol = lines[childList[i][1]][1];
+                if(moves[i][0] > optimalValue){
+                    optimalValue = moves[i][0];
+                    *pRow = lines[moves[i][1]][0];
+                    *pCol = lines[moves[i][1]][1];
                 }
             } else {
-                if((childList[i][0] < optimalValue)){
-                    optimalValue = childList[i][0];
-                    *pRow = lines[childList[i][1]][0];
-                    *pCol = lines[childList[i][1]][1];
+                if((moves[i][0] < optimalValue)){
+                    optimalValue = moves[i][0];
+                    *pRow = lines[moves[i][1]][0];
+                    *pCol = lines[moves[i][1]][1];
                 }
             }
 
@@ -518,6 +525,15 @@ int alpha_beta_minimax(const int board[][COL], int lines[][2], int *pRow, int *p
             getRandPoint(board, pRow, pCol);
         }
         return optimalValue;
+    }
+}
+
+void copyBoard(const int src[][COL], int dst[][COL]) {
+    int row = 0, col = 0;
+    for (row = 0; row < ROW; row++) {
+        for (col = 0; col < COL; col++) {
+            dst[row][col] = src[row][col];
+        }
     }
 }
 
@@ -539,7 +555,7 @@ void printMenu() {
     printf("Select menu number: ");
 }
 
-void printMenu_AI() {
+void printAIMenu() {
     printLine();
     printf("1. Easy\n");
     printf("2. Normal\n");
@@ -554,8 +570,8 @@ void getMenu(int *menu) {
     scanf("%d", menu);
 }
 
-void getMenu_AI(int *menu) {
-    printMenu_AI();
+void getAIMenu(int *menu) {
+    printAIMenu();
     scanf("%d", menu);
 }
 
@@ -574,7 +590,7 @@ int inputMenu(int *mode, int option){
 void menu(int *mode, int option){
     do {
         if(option == AI){
-            getMenu_AI(mode);
+            getAIMenu(mode);
         } else {
             getMenu(mode);
         }
@@ -599,22 +615,8 @@ int countBoundary(const int board[][9], int row, int col) {
     return count;
 }
 
-void openBoundary(const int board[][COL], int *pRow, int *pCol, int row, int col) {
-    int i = 0, j = 0, tmpRow = 0, tmpCol = 0;
-    for (i = -1; i < 2; i++) {
-        for (j = -1; j < 2; j++) {
-            tmpRow = row + i;
-            tmpCol = col + j;
-            if (isLine(tmpRow, tmpCol) && (board[tmpRow][tmpCol] == 0)) {
-                *pRow = tmpRow;
-                *pCol = tmpCol;
-            }
-        }
-    }
-}
-
 int isOdd(int x) {
-    return (x % 2 == 1);
+    return (x % 2 == 1) ? (1) : (0);
 }
 
 int isValid(const int board[][COL], int row, int col) {
