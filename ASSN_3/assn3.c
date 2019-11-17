@@ -274,7 +274,6 @@ void setGame(int mode, int *player1, int *player2, int *AI_option_1, int *AI_opt
     if (mode == 2) {
         setDifficulty(AI_option_2, 0);
     } else if (mode == 3) {
-
         if (setDifficulty(AI_option_1, 1) && *AI_option_1 == 4) {return;}
         if (setDifficulty(AI_option_2, 2) && *AI_option_2 == 4) {return;}
     }
@@ -387,20 +386,6 @@ void getRandPoint(const int board[][COL], int *pRow, int *pCol) {
         *pRow = getRand(0, ROW);
         *pCol = getRand(0, COL);
     } while(isValid(board, *pRow, *pCol) == 0);
-}
-
-void openBoundary(const int board[][COL], int *pRow, int *pCol, int row, int col) {
-    int i = 0, j = 0, tmpRow = 0, tmpCol = 0;
-    for (i = -1; i < 2; i++) {
-        for (j = -1; j < 2; j++) {
-            tmpRow = row + i;
-            tmpCol = col + j;
-            if (isLine(tmpRow, tmpCol) && (board[tmpRow][tmpCol] == 0)) {
-                *pRow = tmpRow;
-                *pCol = tmpCol;
-            }
-        }
-    }
 }
 
 void AI_function(int *px, int *py, const int board[][9], int lines[][2], int AI_option, int player1_num, int player2_num, int turn_num) {
@@ -614,8 +599,22 @@ int countBoundary(const int board[][9], int row, int col) {
     return count;
 }
 
+void openBoundary(const int board[][COL], int *pRow, int *pCol, int row, int col) {
+    int i = 0, j = 0, tmpRow = 0, tmpCol = 0;
+    for (i = -1; i < 2; i++) {
+        for (j = -1; j < 2; j++) {
+            tmpRow = row + i;
+            tmpCol = col + j;
+            if (isLine(tmpRow, tmpCol) && (board[tmpRow][tmpCol] == 0)) {
+                *pRow = tmpRow;
+                *pCol = tmpCol;
+            }
+        }
+    }
+}
+
 int isOdd(int x) {
-    return (x % 2 == 1) ? (1) : (0);
+    return (x % 2 == 1);
 }
 
 int isValid(const int board[][COL], int row, int col) {
