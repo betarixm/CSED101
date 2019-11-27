@@ -42,8 +42,6 @@ typedef struct {
     long long sum_src_square;
 } CHANNEL;
 
-void setOptimal(IMG *img, int target, int dW, int dH, int w, int h);
-
 void menu(int *mode, const char fileName[]);
 
 int loadImage(FILE **inputImage, char *fileName);
@@ -99,13 +97,6 @@ int max(int a, int b) {
 
 int min(int a, int b) {
     return (a < b) ? (a) : (b);
-}
-
-void setOptimal(IMG *img, int target, int dW, int dH, int w, int h) {
-    img->opt[target].d.w = dW;
-    img->opt[target].d.h = dH;
-    img->opt[target].ref.w = w;
-    img->opt[target].ref.h = h;
 }
 
 void menu(int *mode, const char fileName[]) {
@@ -224,7 +215,6 @@ void calc(IMG *img, int src, int target, int isSSD) {
                                                                                     sqrt(ch.sum_target_square)));
             ch.optimal_value = (d.w == -MAX_DW && d.h == -MAX_DH) ? (ch.value) : (ch.optimal_value);
             ch.isOptimal = (isSSD) ? (ch.value < ch.optimal_value) : (ch.value > ch.optimal_value);
-            // setOptimal(img, src, 0, 0, 0, 0);
             img->opt[src] = (OPTIMAL){(POINT){0, 0}, (POINT){0, 0}};
             if (ch.isOptimal) {
                 ch.optimal_value = ch.value;
@@ -290,8 +280,7 @@ void resultIMG(IMG *img, char resultFileName[], const int targets[]) {
         }
     }
 
-    calibration.w = img->opt[w_pos[0]].d.w * -1;
-    calibration.h = img->opt[h_pos[0]].d.h * -1;
+    calibration = (POINT){img->opt[w_pos[0]].d.w * -1, img->opt[h_pos[0]].d.h * -1};
 
     for (i = 0; i < 3; i++) {
         img->opt[w_pos[i]].d.w += calibration.w;
