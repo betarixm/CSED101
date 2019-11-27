@@ -25,22 +25,23 @@ typedef struct {
 } OPTIMAL;
 
 typedef struct {
-    int width;
-    int height;
-    int **channels[3];
-    OPTIMAL opt[3];
-} IMG;
-
-typedef struct {
-    int pixel;
+    POINT d;
+    POINT ref;
     int isOptimal;
     double value;
     double optimal_value;
     long long sum;
     long long sum_cross;
     long long sum_target_square;
-    long long sum_src_square;
 } CHANNEL;
+
+typedef struct {
+    int width;
+    int height;
+    int **channels[3];
+    OPTIMAL opt[3];
+    // CHANNEL ch[3];
+} IMG;
 
 void menu(int *mode, const char fileName[]);
 
@@ -179,14 +180,15 @@ void printMenu(const char *fileName) {
 }
 
 void calc(IMG *img, int src, int target, int isSSD) {
-    POINT ref_src, ref_target, d;
+    POINT ref_src, d;
     CHANNEL ch;
     int pixel_src = 0, pixel_target = 0, height = 0, width = 0, h = 0, w = 0;
+    long long sum_src_square = 0;
 
     for (d.w = -MAX_DW; d.w <= MAX_DW; d.w++) {
         for (d.h = -MAX_DH; d.h <= MAX_DH; d.h++) {
-            ref_src = (POINT){d.w * (d.w > 0), d.h * (d.h < 0) * (-1)};
-            ref_target = (POINT){d.w * (d.w < 0) * (-1), d.h * (d.h > 0)};
+            ref_src = (POINT) {d.w * (d.w > 0), d.h * (d.h < 0) * (-1)};
+            ch.ref = (POINT) {d.w * (d.w < 0) * (-1), d.h * (d.h > 0)};
 
             height = (img->height) - (abs(d.h));
             width = (img->width) - (abs(d.w));
@@ -194,33 +196,32 @@ void calc(IMG *img, int src, int target, int isSSD) {
             ch.sum = 0;
             ch.sum_cross = 0;
             ch.sum_target_square = 0;
-            ch.sum_src_square = 0;
+            sum_src_square = 0;
 
             for (h = 0; h < height; h++) {
                 for (w = 0; w < width; w++) {
                     pixel_src = img->channels[src][ref_src.h + h][ref_src.w + w];
-                    pixel_target = img->channels[target][ref_target.h + h][ref_target.w + w];
+                    pixel_target = img->channels[target][ch.ref.h + h][ch.ref.w + w];
                     if (isSSD) {
                         ch.sum += (long long) pow(pixel_src - pixel_target, 2);
                     } else {
                         ch.sum_cross += (pixel_src * pixel_target);
-                        ch.sum_src_square += (long long) pow(pixel_src, 2);
+                        sum_src_square += (long long) pow(pixel_src, 2);
                         ch.sum_target_square += (long long) pow(pixel_target, 2);
                     }
                 }
             }
 
             ch.value = (isSSD) ? ((double) ch.sum / (img->width * img->height)) : ((double) ch.sum_cross /
-                                                                                   (sqrt(ch.sum_src_square) *
+                                                                                   (sqrt(sum_src_square) *
                                                                                     sqrt(ch.sum_target_square)));
             ch.optimal_value = (d.w == -MAX_DW && d.h == -MAX_DH) ? (ch.value) : (ch.optimal_value);
             ch.isOptimal = (isSSD) ? (ch.value < ch.optimal_value) : (ch.value > ch.optimal_value);
-            img->opt[src] = (OPTIMAL){(POINT){0, 0}, (POINT){0, 0}};
+            img->opt[src] = (OPTIMAL) {(POINT) {0, 0}, (POINT) {0, 0}};
             if (ch.isOptimal) {
                 ch.optimal_value = ch.value;
-                img->opt[target] = (OPTIMAL){d, ref_target};
+                img->opt[target] = (OPTIMAL) {d, ch.ref};
             }
-
         }
     }
 }
@@ -280,7 +281,7 @@ void resultIMG(IMG *img, char resultFileName[], const int targets[]) {
         }
     }
 
-    calibration = (POINT){img->opt[w_pos[0]].d.w * -1, img->opt[h_pos[0]].d.h * -1};
+    calibration = (POINT) {img->opt[w_pos[0]].d.w * -1, img->opt[h_pos[0]].d.h * -1};
 
     for (i = 0; i < 3; i++) {
         img->opt[w_pos[i]].d.w += calibration.w;
