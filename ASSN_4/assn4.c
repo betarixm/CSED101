@@ -75,7 +75,7 @@ int main() {
     int targets[3] = {RED, GREEN, BLUE}; // targets[2]를 기준 채널으로 삼는다.
 
     for (i = 0; i < 3; i++) {
-        img.channels[i] = (int **) malloc(sizeof(int *));
+        img.channels[i] = NULL;
     }
 
     do {
@@ -212,9 +212,8 @@ void calc(IMG *img, int src, int target, int isSSD) {
                 }
             }
 
-            ch.value = (isSSD) ? ((double) ch.sum / (img->width * img->height)) : ((double) ch.sum_cross /
-                                                                                   (sqrt(sum_src_square) *
-                                                                                    sqrt(ch.sum_target_square)));
+            ch.value = (isSSD) ? ((double) ch.sum / (width * height)) : ((double) ch.sum_cross /
+                                                                                   (sqrt(sum_src_square) *sqrt(ch.sum_target_square)));
             ch.optimal_value = (d.w == -MAX_DW && d.h == -MAX_DH) ? (ch.value) : (ch.optimal_value);
             ch.isOptimal = (isSSD) ? (ch.value < ch.optimal_value) : (ch.value > ch.optimal_value);
             img->opt[src] = (OPTIMAL) {(POINT) {0, 0}, (POINT) {0, 0}};
@@ -222,6 +221,7 @@ void calc(IMG *img, int src, int target, int isSSD) {
                 ch.optimal_value = ch.value;
                 img->opt[target] = (OPTIMAL) {d, ch.ref};
             }
+
         }
     }
 }
