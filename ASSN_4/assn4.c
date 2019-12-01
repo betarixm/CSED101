@@ -17,7 +17,7 @@
 typedef struct {
     int w;
     int h;
-} POINT;
+} POINT; //
 
 typedef struct {
     POINT d;
@@ -32,9 +32,9 @@ typedef struct {
 
 typedef struct {
     CHANNEL ch[3];
+    int ***pixel;
     int width;
     int height;
-    int **channels[3];
 } IMG;
 
 void menu(int *mode, const char fileName[]);
@@ -59,18 +59,15 @@ int max(int a, int b);
 
 int min(int a, int b);
 
-void swap(int *a, int *b);
+int swap(int *a, int *b);
 
 int main() {
     IMG img;
     FILE *inputImgFile;
-    int mode = 0, i = 0;
+    int mode = 0;
     char fileName[LEN_FILENAME] = "";
     int targets[3] = {RED, GREEN, BLUE}; // targets[2]를 기준 채널으로 삼는다.
-
-    for (i = 0; i < 3; i++) {
-        img.channels[i] = NULL;
-    }
+    img.pixel = NULL;
 
     do {
         menu(&mode, fileName);
@@ -79,11 +76,11 @@ int main() {
         } else if (mode == 2 || mode == 3) {
             SSD_NCC(&img, fileName, targets, 3 - mode);
         } else if (mode == 4) {
-            for (i = 0; i < 3; i++) {
-                free(img.channels[i]);
-            }
+            free(img.pixel);
         }
     } while (mode != 4);
+
+    return 0;
 }
 
 void menu(int *mode, const char fileName[]) {
@@ -124,40 +121,39 @@ int loadImage(FILE **inputImage, char *fileName) {
     printf("이미지 이름: ");
     scanf("%s", fileName);
     *inputImage = fopen(fileName, "r");
-    if (*inputImage != NULL) {
-        return 1;
-    } else {
+    if (*inputImage == NULL)  {
         printf("이미지를 불러오는데 실패했습니다.\n\n");
         strcpy(fileName, "");
         return 0;
     }
+    return 1;
 }
 
 int readImage(FILE **inputImage, IMG *img) {
     int i = 0, j = 0, k = 0;
-    for (i = 0; i < 3; i++) {
-        free(img->channels[i]);
+    free(img->pixel);
+    fscanf(*inputImage, "%*c%*c %d %d %*d", &(img->width), &(img->height));
+
+    for (i = 0; i < 3; i++){
+        img->pixel = (int***) malloc(3 * sizeof(int**));
     }
 
-    fscanf(*inputImage, "%*c%*c %d %d %*d", &(img->width), &(img->height));
     for (i = 0; i < 3; i++) {
-        img->channels[i] = (int **) malloc((img->height) * sizeof(int *));
+        img->pixel[i] = (int **) malloc((img->height) * sizeof(int *));
         for (j = 0; j < (img->height); j++) {
-            img->channels[i][j] = (int *) malloc((img->width) * sizeof(int));
+            img->pixel[i][j] = (int *) malloc((img->width) * sizeof(int));
         }
     }
 
     for (i = 0; i < (img->height); i++) {
         for (j = 0; j < (img->width); j++) {
-
             for (k = 0; k < 3; k++) {
-                fscanf(*inputImage, "%d", &(img->channels[k][i][j]));
+                fscanf(*inputImage, "%d", &(img->pixel[k][i][j]));
             }
         }
     }
 
     fclose(*inputImage);
-
     printf("이미지 읽기를 완료했습니다.\n\n");
     return 0;
 }
@@ -166,19 +162,14 @@ void writeImage(IMG *img, char *resultFileName, const int *targets) {
     FILE *resultFile;
     POINT calibration;
     CHANNEL* ch = &(img->ch[0]);
-
     int i = 0, j = 0, size = 3, w = 0, h = 0, width = 0, height = 0;
     int w_pos[3] = {targets[0], targets[1], targets[2]};
     int h_pos[3] = {targets[0], targets[1], targets[2]};
 
     for (i = 1; i < size; i++) {
         for (j = 0; j < size - i; j++) {
-            if (ch[w_pos[j]].d.w > ch[w_pos[j + 1]].d.w) {
-                swap(&w_pos[j], &w_pos[j + 1]);
-            }
-            if (ch[h_pos[j]].d.h > ch[h_pos[j + 1]].d.h) {
-                swap(&h_pos[j], &h_pos[j + 1]);
-            }
+            (ch[w_pos[j]].d.w > ch[w_pos[j + 1]].d.w) && swap(&w_pos[j], &w_pos[j + 1]);
+            (ch[h_pos[j]].d.h > ch[h_pos[j + 1]].d.h) && swap(&h_pos[j], &h_pos[j + 1]);
         }
     }
 
@@ -204,7 +195,7 @@ void writeImage(IMG *img, char *resultFileName, const int *targets) {
     for (h = 0; h < height; h++) {
         for (w = 0; w < width; w++) {
             for (i = 0; i < 3; i++) {
-                fprintf(resultFile, "%d ", img->channels[i][ch[i].ref.h + h][ch[i].ref.w + w]);
+                fprintf(resultFile, "%d ", img->pixel[i][ch[i].ref.h + h][ch[i].ref.w + w]);
             }
         }
     }
@@ -234,8 +225,8 @@ void calc(IMG *img, int src, int target, int isSSD) {
             for (h = 0; h < height; h++) {
                 for (w = 0; w < width; w++) {
 
-                    pixel_src = img->channels[src][src_ref.h + h][src_ref.w + w];
-                    pixel_target = img->channels[target][target_ref.h + h][target_ref.w + w];
+                    pixel_src = img->pixel[src][src_ref.h + h][src_ref.w + w];
+                    pixel_target = img->pixel[target][target_ref.h + h][target_ref.w + w];
                     if (isSSD) {
                         ch->sum += (long long) pow(pixel_src - pixel_target, 2);
                     } else {
@@ -247,8 +238,8 @@ void calc(IMG *img, int src, int target, int isSSD) {
             }
 
             ch->value = (isSSD) ? ((double) ch->sum / (width * height)) : ((double) ch->sum_cross /
-                                                                         (sqrt(sum_src_square) *
-                                                                          sqrt(ch->sum_target_square)));
+                                                                           (sqrt((double)sum_src_square) *
+                                                                            sqrt((double)ch->sum_target_square)));
             ch->optimal_value = (d.w == -MAX_DW && d.h == -MAX_DH) ? (ch->value) : (ch->optimal_value);
             ch->isOptimal = (isSSD) ? (ch->value < ch->optimal_value) : (ch->value > ch->optimal_value);
             img->ch[src].d = (POINT){0,0};
@@ -287,10 +278,7 @@ void printMenu(const char *fileName) {
     } else {
         printf("[1] 이미지 변경 - 현재 이미지: %s\n", fileName);
     }
-
-    printf("[2] 이미지 정합(SSD)\n");
-    printf("[3] 이미지 정합(NCC)\n");
-    printf("[4] 종료\n");
+    printf("[2] 이미지 정합(SSD)\n[3] 이미지 정합(NCC)\n[4] 종료\n");
     printLine();
     printf("메뉴 선택> ");
 }
@@ -303,7 +291,7 @@ int min(int a, int b) {
     return (a < b) ? (a) : (b);
 }
 
-void swap(int *a, int *b) {
+int swap(int *a, int *b) {
     int tmp = *a;
     *a = *b;
     *b = tmp;

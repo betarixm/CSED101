@@ -511,7 +511,7 @@ int alpha_beta_minimax(const int board[][COL], int lines[][2], int *pRow, int *p
                 } else { // 아니라면,
 
                     childOptimalValue = alpha_beta_minimax(simulBoard, lines, pRow, pCol, player1_Num, player2_Num, ((extraTurn && isPlayersTurn) || ((extraTurn == 0) && (isPlayersTurn == 0))), currentScore, depth - 1, alpha, beta);
-                    // 재귀 호출을 통해 child 노드에서 opt 한 값을 구한다.
+                    // 재귀 호출을 통해 child 노드에서 optimal 한 값을 구한다.
                     if(isPlayersTurn){
                         best = max(best, childOptimalValue);
                         alpha = max(alpha, best);

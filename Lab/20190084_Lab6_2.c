@@ -5,7 +5,7 @@
 #define MAX 6
 
 void bubble_sort(int a[], int size);
-void swap(int *x, int *y);
+int swap(int *x, int *y);
 void print_array(int a[], int size);
 void input_array(int a[], int size);
 
@@ -45,10 +45,10 @@ void bubble_sort(int a[], int size){
     }
 }
 
-void swap(int *x, int *y){
-    int tmp = *x;
-    *x = *y;
-    *y = tmp;
+int swap(int *x, int *y){
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
 }
 
 void print_array(int a[], int size){
