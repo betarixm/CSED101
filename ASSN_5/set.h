@@ -26,3 +26,7 @@ int clearElements(Element* baseEle);
 int clearSet(Set* baseSet, char* setName);
 Set* findSetbyName(Set* baseSet, char* setName);
 Set* appendSet(Set* baseSet, char*setName);
+Element* maxElement(Element* a, Element*b);
+Set * setUnion(Set* baseSet, char* targetName_1, char* targetName_2, char* resultName);
+Set * setInter(Set* baseSet, char* srcName, char* targetName, char* resultName);
+Set* setDiff(Set* baseSet, char* srcName, char* targetName, char*resultName);
