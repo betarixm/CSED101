@@ -23,7 +23,6 @@ struct list {
     NODE *head;
 };
 
-
 typedef struct list LIST;
 
 void insert_node(LIST *s);
@@ -67,7 +66,9 @@ void insert_node(LIST *s) {
         tmp->next = s->head;
         s->head = tmp;
     } else {
+
         while(--count){
+
             cur = cur->next;
         }
         tmp->next = cur->next;

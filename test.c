@@ -1,394 +1,305 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include<stdio.h>
-#include<string.h>
-#include<stdlib.h>
-#include<math.h>
 
-float ncc(int** color1, int** color2, int x, int y, int width, int height);
-float ssd(int** color1, int** color2, int x, int y, int width, int height);
-void find_min(int** color1, int** color2, int* min_x, int* min_y, int width, int height, int mode);
-void find_Range(int Red_x, int Red_y, int Green_x, int Green_y,int height, int width, int *top, int *bottom, int *right, int *left);
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 
+#define LEN_FILENAME 31
+#define MAX_DW 15
+#define MAX_DH 15
 
-int main()
-{
-    FILE* file=NULL, * result;
-    int mode, width, height, p, i, j, Red_x, Red_y, Green_x, Green_y, min_x=-15, min_y=-15, top=0, bottom=0, right=0, left=0;// p는 픽셀을 의미한다
-    float min=0;
-    char imagename[30], type[10], finalfile[30];
-    int** R, ** G, **B;//Red의 2차원 배열
+#define RED 0
+#define GREEN 1
+#define BLUE 2
 
-    while (1)
-    {
-        printf("===================\n[1] 이미지 불러오기\n[2] 이미지 정합(SSD)\n[3] 이미지 정합(NCC)\n[4] 종료\n===================\n메뉴 선택> ");
-        scanf("%d", &mode);
-        if (mode > 5)
-        {
-            printf("Wrong!!! Select again\n");
+typedef struct {
+    int w; // x 좌표. width에 대응.
+    int h; // y 좌표. height에 대응.
+} POINT; // 좌표 1개의 정보
+
+typedef struct {
+    POINT d; // delta. 채널이 움직여야 하는 양.
+    POINT ref; // reference 좌표. 채널의 기준 시작점.
+    int isOptimal; // 현재 평가값이 최적 값인지를 나타내는 bool.
+    double value; // 현재 평가값
+    double optimal_value; // 최적 평가값
+    long long sum; // 단순 합계
+    long long sum_cross; // 기준 채널과의 크로스 값 합계.
+    long long sum_target_square; // 이 채널의 제곱 값 합계.
+} CHANNEL; // 채널 1개의 정보
+
+typedef struct {
+    CHANNEL ch[3]; // 채널 3개에 대한 정보
+    int ***pixel; // 채널 픽셀 정보
+    int width; // 가로 길이
+    int height; // 세로 길이
+} IMG; // 이미지 정보
+
+void SSD_NCC(IMG *img, char fileName[], int targets[], int isSSD);
+
+void calc(IMG *img, int src, int target, int isSSD);
+
+int loadImage(FILE **inputImage, char *fileName);
+
+int readImage(FILE **inputImage, IMG *img);
+
+void writeImage(IMG *img, char *resultFileName, const int *targets);
+
+void result(IMG *img, char fileName[], char resultFileName[], int targets[], int isSSD);
+
+void menu(int *mode, const char fileName[]);
+
+void printMenu(const char *fileName);
+
+void printLine();
+
+int free_pixel(IMG* img);
+
+int swap(int *a, int *b);
+
+int main() {
+    IMG img;
+    FILE *inputImgFile;
+    int mode = 0;
+    char fileName[LEN_FILENAME] = "";
+    int targets[3] = {RED, GREEN, BLUE}; // targets[2]를 기준 채널으로 삼는다.
+    img.pixel = NULL;
+
+    do {
+        menu(&mode, fileName); // 사용자로부터 입력을 받는다.
+        if (mode == 1) {
+            loadImage(&inputImgFile, fileName) && readImage(&inputImgFile, &img); // image를 불러오는데 성공하면 readImage 한다.
+        } else if (mode == 2 || mode == 3) {
+            SSD_NCC(&img, fileName, targets, 3 - mode); // SSD / NCC 호출
+        } else if (mode == 4) {
+            free_pixel(&img); // 종료 시 free.
         }
-        else if (mode != 1)
-        {
-            printf("Wrong!!! Select again\n");
-        }
-        else if (mode == 4)//quit선택하면 끝낸다
-        {
-            return 0;
-        }
-        if (mode == 1)
-        {
+    } while (mode != 4);
 
-            while (file == NULL)//파일이 존재하지 않을 경우 다시 입력하라고 한다.
-            {
-                printf("이미지 이름: ");
-                scanf("%s", imagename);//error뜨면 null문자 여부 확인
-                file = fopen(imagename, "r");
-                if (file == NULL)
-                {
-                    printf("There isn't any file that has name %s\n", imagename);//그런 파일이 존재하지 않다고 출력한다 만약 파일이 열렸다면 file == NULL이 아니므로 while문이 끝난다
-                }
-            }
+    return 0;
+}
 
-            fscanf(file, "%s", type);
-            fscanf(file, "%d%d%d", &width, &height, &p);
-            R = (int**)malloc(sizeof(int*) * height);
-            B = (int**)malloc(sizeof(int*) * height);
-            G = (int**)malloc(sizeof(int*) * height);
-            for (i = 0; i < height; i++)//동적할당하기
-            {
-                *(R + i) = (int*)malloc(sizeof(int) * width);
-                *(G + i) = (int*)malloc(sizeof(int) * width);
-                *(B + i) = (int*)malloc(sizeof(int) * width);
-            }
-            for (i = 0; i < height; i++)
-            {
-                for (j = 0; j < width; j++)//앞의 4자리 제외하고 RGB의 픽셀값들을 할당하는 2중 for문 i가
-                {
-                    fscanf(file, "%d%d%d", &R[i][j], &G[i][j], &B[i][j]);
-                }
-            }
-            printf("이미지 읽기를 완료했습니다.\n");//1선택 후 픽셀값을 동적할당한 뒤 메뉴선택창을 띄운다
-            while (1)
-            {
+void SSD_NCC(IMG *img, char fileName[], int targets[], int isSSD) {
+    char resultFileName[100] = "";
+    printf("\n");
+    printLine();
+    calc(img, targets[2], targets[0], isSSD); // targets[2]를 기준으로 targets[0]에 대한 최적값 계산
+    calc(img, targets[2], targets[1], isSSD); // targets[2]를 기준으로 targets[1]에 대한 최적값 계슨
+    result(img, fileName, resultFileName, targets, isSSD); // result 출력.
+    printLine();
+    printf("\n");
+}
 
-                printf("=================== \n[1] 이미지 변경 - 현재 이미지 : %s\n[2] 이미지 정합(SSD)\n[3] 이미지 정합(NCC)\n[4] 종료\n=================== \n메뉴 선택 > ", imagename);
-                scanf("%d", &mode);
-                if (mode == 2)
-                {
+void calc(IMG *img, int src, int target, int isSSD) {
+    int pixel_src = 0, pixel_target = 0, height = 0, width = 0, h = 0, w = 0;
+    long long sum_src_square = 0;
+    POINT src_ref, target_ref, d; // 기준, 타겟의 기준점과 delta iterator 설정.
+    CHANNEL* ch = &(img->ch[target]); // 타겟의 채널 정보
 
-                    find_min(B, R, &min_x, &min_y, width, height, mode);
-                    Red_x = min_x;
-                    Red_y = min_y;
+    img->ch[src].d = (POINT){0,0};
+    img->ch[src].ref = (POINT){0, 0};
 
-                    find_min(B, G, &min_x, &min_y, width, height, mode);
-                    Green_x = min_x;
-                    Green_y = min_y;
+    for (d.h = -MAX_DH; d.h <= MAX_DH; d.h++) { // delta w가 -15 ~ 15
+        for (d.w = -MAX_DW; d.w <= MAX_DW; d.w++) { // delta h가 -15 ~ 15
+            src_ref = (POINT) {d.w * (d.w > 0), d.h * (d.h < 0) * (-1)}; // delta에 따른 기준 채널 기준점 세팅
+            target_ref = (POINT) {d.w * (d.w < 0) * (-1), d.h * (d.h > 0)}; // delta에 따른 타겟 채널 기준점 세팅
 
-                    find_Range(Red_x, Red_y, Green_x, Green_y, height, width, &top, &bottom, &right, &left);
-                    printf("\n\n===================\nSSD - R : [%d, %d] G : [%d, %d]\n결과 이미지 파일: %c%c%c%c%c_SSD_R%d_%d_G_%d_%d.ppm\n===================", Red_x, Red_y, Green_x, Green_y, imagename[0], imagename[1], imagename[2], imagename[3], imagename[4], Red_x, Red_y, Green_x, Green_y);
-                    sprintf(finalfile, "%c%c%c%c%c_SSD_R%d_%d_G_%d_%d.ppm", imagename[0], imagename[1], imagename[2], imagename[3], imagename[4], Red_x, Red_y, Green_x, Green_y);
-                    result = fopen(finalfile, "w");
-                    fprintf(result, "P3 %d %d 255", width, height);//P3 width height 255를 입력한다 width와 height는 변화된 값
-                    for (i = top; i < bottom; i++)
-                    {
-                        for (j = left; j < right; j++)
-                        {
-                            fprintf(result, "%d%d%d", R[i + Red_y][j - Red_x], G[i + Green_y][j - Green_x], B[i][j]);
-                        }
+            height = (img->height) - (abs(d.h)); // delta에 따른 가로 길이
+            width = (img->width) - (abs(d.w)); // delta에 따른 세로 길이
+
+            // 합계 초기화
+            ch->sum = 0;
+            ch->sum_cross = 0;
+            ch->sum_target_square = 0;
+            sum_src_square = 0;
+
+            for (h = 0; h < height; h++) { // 세로 좌표 안에서
+                for (w = 0; w < width; w++) { // 가로 좌표 안에서
+                    pixel_src = img->pixel[src][src_ref.h + h][src_ref.w + w]; // 기준 채널 픽셀 값
+                    pixel_target = img->pixel[target][target_ref.h + h][target_ref.w + w]; // 타겟 채널 픽셀 값
+                    if (isSSD) { // SSD 모드라면
+                        ch->sum += (long long) pow(pixel_src - pixel_target, 2); // 단순 합계 구하기
+                    } else { // NCC 모드라면
+                        ch->sum_cross += (pixel_src * pixel_target); // 기준 * 타겟 크로스 합계
+                        sum_src_square += (long long) pow(pixel_src, 2); // 기준 채널 제곱 값 합계
+                        ch->sum_target_square += (long long) pow(pixel_target, 2); // 타겟 채널 제곱 값 합계
                     }
-                    fclose(result);
                 }
-                else if (mode == 3)
-                {
-                    find_min(B, R, &min_x, &min_y, width, height, mode);
-                    Red_x = min_x;
-                    Red_y = min_y;
+            }
 
-                    find_min(B, G, &min_x, &min_y, width, height, mode);
-                    Green_x = min_x;
-                    Green_y = min_y;
+            ch->value = (isSSD) ?
+                        ((double) ch->sum / (width * height)) : // SSD일 때 평가값
+                        ((double) ch->sum_cross /(sqrt((double)sum_src_square) *sqrt((double)ch->sum_target_square))); // NCC일 때 평가값
+            ch->optimal_value = (d.w == -MAX_DW && d.h == -MAX_DH) ? (ch->value) : (ch->optimal_value); // 맨 처음에는 평가값이 바로 최적값이 된다
+            ch->isOptimal = (isSSD) ? (ch->value < ch->optimal_value) : (ch->value > ch->optimal_value); // SSD / NCC에 따른 optimal bool.
 
-                    find_Range(Red_x, Red_y, Green_x, Green_y, height, width, &top, &bottom, &right, &left);
-                    printf("\n\n===================\nSSD - R : [%d, %d] G : [%d, %d]\n결과 이미지 파일: %c%c%c%c%c_NCC_R%d_%d_G_%d_%d.ppm\n===================", Red_x, Red_y, Green_x, Green_y, imagename[0], imagename[1], imagename[2], imagename[3], imagename[4], Red_x, Red_y, Green_x, Green_y);
-                    sprintf(finalfile, "%c%c%c%c%c_NCC_R%d_%d_G_%d_%d.ppm", imagename[0], imagename[1], imagename[2], imagename[3], imagename[4], Red_x, Red_y, Green_x, Green_y);
-                    result = fopen(finalfile, "w");
-                    fprintf(result, "P3 %d %d 255", width, height);//P3 width height 255를 입력한다 width와 height는 변화된 값
-                    for (i = top; i < bottom; i++)
-                    {
-                        for (j = left; j < right; j++)
-                        {
-                            fprintf(result, "%d%d%d", R[i + Red_y][j - Red_x], G[i + Green_y][j - Green_x], B[i][j]);
-                        }
-                    }
-                    fclose(result);
-
-                }
-                else if (mode == 4)
-                {
-                    free(R);
-                    free(B);
-                    free(G);
-                    return 0;
-                }
+            if (ch->isOptimal) { // optimal한 상황이라면
+                ch->optimal_value = ch->value; // optimal_value 업데이트
+                ch->d = d; // 타겟 채널 delta 값 업데이트
+                ch->ref = target_ref; // 타겟 채널 reference 좌표 업데이트
             }
         }
     }
 }
 
-float ssd(int** color1, int** color2, int x, int y, int width, int height)//color1는 항상 blue로 고정한다고 생각한다 즉 x y좌표를 blue에서 생각한다
-{
-    int i, j, sum = 0;
-
-    if (x >= 0)
-    {
-        if (y >= 0)
-        {
-
-            for (i = 0; i < height - y; i++)//x y가 둘다 양인경우의 ssd값 계산
-            {
-                for (j = 0; j < width - x; j++)
-                {
-                    sum += (color1[i][j + x] - color2[i + y][j]) * (color1[i][j + x] - color2[i + y][j]);
-                }
-            }
-        }
-        else //즉 y가 음수인 경우
-        {
-            for (i = 0; i < height + y; i++)//x y가 둘다 양인경우의 ssd값 계산
-            {
-                for (j = 0; j < width - x; j++)
-                {
-                    sum += (color1[i - y][j + x] - color2[i][j]) * (color1[i - y][j + x] - color2[i][j]);
-                }
-            }
-        }
+int loadImage(FILE **inputImage, char *fileName) {
+    printf("이미지 이름: ");
+    scanf("%s", fileName);
+    *inputImage = fopen(fileName, "r"); // 입력 문자열으로 파일 열기.
+    if (*inputImage == NULL)  { // 만약 파일을 불러오는데 실패했다면
+        printf("이미지를 불러오는데 실패했습니다.\n\n");
+        strcpy(fileName, "");
+        return 0;
     }
-    else // x가 음수인 경우
-    {
-        if (y >= 0)
-        {
-
-            for (i = 0; i < height - y; i++)//y가 양인경우
-            {
-                for (j = 0; j < width + x; j++)
-                {
-                    sum += (color1[i][j] - color2[i + y][j-x]) * (color1[i][j] - color2[i + y][j - x]);
-                }
-            }
-        }
-        else //즉 y가 음수인 경우
-        {
-            for (i = 0; i < height + y; i++)//x y가 둘다 양인경우의 ssd값 계산
-            {
-                for (j = 0; j < width + x; j++)
-                {
-                    sum += (color1[i - y][j] - color2[i][j-x]) * (color1[i - y][j] - color2[i][j - x]);
-                }
-            }
-
-        }
-    }
-    return (float)(sum / ((width-x) *(height - y)));
+    return 1;
 }
 
-float ncc(int** color1, int** color2, int x, int y, int width, int height)//color1을 blue color2를 Red Green으로 생각한다
-{
-    int i, j, sum1 = 0, sum2 = 0, sum3 = 0;
+int readImage(FILE **inputImage, IMG *img) {
+    int i = 0, j = 0, k = 0;
+    free_pixel(img); // 우선 pixel을 free한다.
+    fscanf(*inputImage, "%*c%*c %d %d %*d", &(img->width), &(img->height)); // width, height 입력
 
-    if (x >= 0)
-    {
-        if (y >= 0)
-        {
+    for (i = 0; i < 3; i++){ // 동적할당; 채널 3개
+        img->pixel = (int***) malloc(3 * sizeof(int**));
+    }
 
-            for (i = 0; i < height - y; i++)//x y가 둘다 양인경우의 ncc값 계산
-            {
-                for (j = 0; j < width - x; j++)
-                {
-                    sum1 += color1[i][j+x] * color2[i+y][j];
-                    sum2 += color1[i][j+x] * color1[i][j+x];
-                    sum3 += color2[i+y][j] * color2[i+y][j];
-                }
-            }
+    for (i = 0; i < 3; i++) { // 동적할당; height
+        img->pixel[i] = (int **) malloc((img->height) * sizeof(int *));
+        for (j = 0; j < (img->height); j++) { // 동적할당; width
+            img->pixel[i][j] = (int *) malloc((img->width) * sizeof(int));
         }
-        else //즉 y가 음수인 경우
-        {
-            for (i = 0; i < height + y; i++)//x y가 둘다 양인경우의 ssd값 계산
-            {
-                for (j = 0; j < width - x; j++)
-                {
-                    sum1 += color1[i-y][j+x] * color2[i][j];
-                    sum2 += color1[i-y][j+x] * color1[i-y][j+x];
-                    sum3 += color2[i][j] * color2[i][j];
-                }
+    }
+
+    for (i = 0; i < (img->height); i++) {
+        for (j = 0; j < (img->width); j++) {
+            for (k = 0; k < 3; k++) {
+                fscanf(*inputImage, "%d", &(img->pixel[k][i][j])); // 픽셀값 R,G,B 순서대로 입력.
             }
         }
     }
-    else // x가 음수인 경우
-    {
-        if (y >= 0)
-        {
 
-            for (i = 0; i < height - y; i++)//y가 양인경우
-            {
-                for (j = 0; j < width + x; j++)
-                {
-                    sum1 += color1[i][j] * color2[i+y][j-x];
-                    sum2 += color1[i][j] * color1[i][j];
-                    sum3 += color2[i+y][j-x] * color2[i+y][j-x];
-                }
-            }
-        }
-        else //즉 y가 음수인 경우
-        {
-            for (i = 0; i < height + y; i++)//x y가 둘다 양인경우의 ssd값 계산
-            {
-                for (j = 0; j < width + x; j++)
-                {
-                    sum1 += color1[i-y][j] * color2[i][j-x];
-                    sum2 += color1[i-y][j] * color1[i-y][j];
-                    sum3 += color2[i][j-x] * color2[i][j-x];
-                }
-            }
-        }
-    }
-    return (float)sum1 / sqrt(sum2 * sum3);
+    fclose(*inputImage); // 파일 스트림 close.
+    printf("이미지 읽기를 완료했습니다.\n\n");
+    return 0;
 }
-void find_min(int** color1, int** color2, int* min_x, int* min_y, int width, int height, int mode)
-{
-    int i, j;
-    float min;
 
+void writeImage(IMG *img, char *resultFileName, const int *targets) {
+    FILE *resultFile; // resultFile 파일포인터.
+    POINT calibration; // delta 보정 상수.
+    CHANNEL* ch = (img->ch); // 편의를 위해 img->ch 따로 지정.
+    int i = 0, j = 0, size = 3, w = 0, h = 0, width = 0, height = 0;
+    int w_pos[3] = {targets[0], targets[1], targets[2]};
+    int h_pos[3] = {targets[0], targets[1], targets[2]};
 
-    if (mode == 2)
-    {
-        min = ssd(color1, color2, -15, -15, width, height);
-        for (i = -15; i <= 15; i++)
-        {
-            for (j = -15; j <= 15; j++)
-            {
-                printf("\nSSD :%f i :%d j: %d", ssd(color1, color2, i, j, width, height), i, j);
-                if (min > ssd(color1, color2, i, j, width, height))
-                {
-                    min = ssd(color1, color2, i, j, width, height);
-                    printf("\nMin :%f", min);
-                    *min_x = j;
-                    *min_y = i;
-                    printf("%d %d", *min_x, *min_y);
-
-                }
-            }
-        }
-    }
-    if (mode == 3)
-    {
-        min = ncc(color1, color2, -15, -15, width, height);
-        for (i = -15; i <= 15; i++)
-        {
-            for (j = -15; j <= 15; j++)
-            {
-                if (min > ncc(color1, color2, i, j, width, height))
-                {
-                    min = ncc(color1, color2, i, j, width, height);
-                    *min_x = j;
-                    *min_y = i;
-                }
-            }
+    for (i = 1; i < size; i++) {
+        for (j = 0; j < size - i; j++) {
+            (ch[w_pos[j]].d.w > ch[w_pos[j + 1]].d.w) && swap(&w_pos[j], &w_pos[j + 1]); // 각 타겟을 delta w를 기준으로 오름차순 정렬
+            (ch[h_pos[j]].d.h > ch[h_pos[j + 1]].d.h) && swap(&h_pos[j], &h_pos[j + 1]); // 각 타겟을 delta h를 기준으로 오름차순 정렬
         }
     }
 
+    // w_pos[0] = 왼쪽에 있는 타겟. w_pos[1] = 가운데에 있는 타겟. w_pos[2] = 오른쪽에 있는 타겟.
+    // h_pos[0] = 아래쪽에 있는 타겟. h_pos[1] = 가운데에 있는 타겟. h_pos[2] = 위쪽에 있는 타겟.
+
+    calibration = (POINT) {ch[w_pos[0]].d.w * -1, ch[h_pos[0]].d.h * -1}; // 가장 작은 delta 값의 -1 곱한 값.
+
+    for (i = 0; i < 3; i++) { // 보정 값을 더해서 모든 delta 값을 0 이상의 수로 만든다.
+        ch[w_pos[i]].d.w += calibration.w;
+        ch[h_pos[i]].d.h += calibration.h;
+    }
+
+    for (i = 0; i < 3; i++) { // 이와 같은 상황에서, 각 채널의 기준 시작점은 아래와 같이 세팅하 수 있다.
+        ch[w_pos[i]].ref.w = ch[w_pos[2]].d.w - ch[w_pos[i]].d.w;
+        ch[h_pos[i]].ref.h = ch[h_pos[i]].d.h;
+    }
+
+    width = img->width - ch[w_pos[2]].d.w; // 출력 이미지 가로 길이
+    height = img->height - ch[h_pos[2]].d.h; // 출력 이미지 세로 길이
+
+    resultFile = fopen(resultFileName, "w"); // 출력 이미지 파일 오픈
+
+    fprintf(resultFile, "P3 %d %d 255\n", width, height); // 파일 시그니처 작성
+
+    for (h = 0; h < height; h++) {
+        for (w = 0; w < width; w++) {
+            for (i = 0; i < 3; i++) {
+                fprintf(resultFile, "%d ", img->pixel[i][ch[i].ref.h + h][ch[i].ref.w + w]); // RGB 순서대로 파일 작성
+            }
+        }
+    }
+
+    fclose(resultFile); // 파일 포인터 닫기
 }
-void find_Range(int Red_x, int Red_y, int Green_x, int Green_y,int height, int width, int *top, int *bottom, int *right, int *left)//ssd ncc가 최소가 되는 xy값을 통해 blue를 기준으로 범위를 정해주는 함수
-{
-    int a, b;
-    a = Red_y;
-    b = Green_y;
 
-    if (a >= 0)
-    {
-        if (b >= 0)
-        {
-            if (a > b)
-            {
-                *top = 0;
-                *bottom = height - a;
-            }
-            else
-            {
-                *top = 0;
-                *bottom = height - b;
-            }
+void result(IMG *img, char fileName[], char resultFileName[], int targets[], int isSSD) {
+    char mode[4] = "NCC";
+    CHANNEL* ch = &(*img->ch);
+    isSSD && strcpy(mode, "SSD"); // SSD 모드라면 NCC로 mode 문자열 변경
+    printf("%s - R:[%d, %d] G:[%d, %d]\n", mode, ch[RED].d.w, ch[RED].d.h, ch[GREEN].d.w,
+           ch[GREEN].d.h);
+    sprintf(resultFileName, "%s_%s_R%d_%d_G%d_%d.ppm", strtok(fileName, "."), mode, ch[RED].d.w,
+            ch[RED].d.h,
+            ch[GREEN].d.w, ch[GREEN].d.h); // sprintf로 파일 이름 생성
+    strcat(fileName, ".ppm"); // strtok 하면서 잘린 .ppm을 다시 붙여준다.
+    writeImage(img, resultFileName, targets); // 이미지 파일 생성
+    printf("결과 이미지 파일: %s\n", resultFileName);
+}
+
+void menu(int *mode, const char fileName[]) {
+    while (1) {
+        printMenu(fileName); // 메뉴 출력
+        scanf("%d", mode);
+
+        if (!(*mode == 1 || *mode == 2 || *mode == 3 || *mode == 4)) { // 1, 2, 3, 4 중 하나가 아니면
+            printf("1, 2, 3, 4 중에서 입력해주세요.\n");
+            getchar();
+            continue;
         }
-        else //b가 0 이하 a 양수인 경우
-        {
 
-            *top = -b;
-            *bottom = height - a;
-
+        if ((*mode == 2 || *mode == 3) && (strcmp(fileName, "") == 0)) { // 2 , 3 인데 fileName이 비어있다면
+            printf("이미지를 불러온 후에 이미지를 정합할 수 있습니다.\n");
+            continue;
         }
+
+        break; // 정상적인 입력일 때 종료.
     }
-    else//a가 음수인 경우
-    {
-        if (b >= 0)
-        {
-            *top = -a;
-            *bottom = height - b;
-        }
-        else//둘다 음수인 경우
-        {
-            if (a < b)
-            {
-                *top =  -a;
-                *bottom = height + b;
-            }
-            else
-            {
-                *top = -b;
-                *bottom = height + a;
-            }
-        }
-    }//top bottom 계산 완료
-    a = Red_x;
-    b = Green_x;
-    if (a >= 0)
-    {
-        if (b >= 0)
-        {
-            if (a > b)
-            {
-                *left = a;
-                *right = 0;
-            }
-            else
-            {
-                *right = b;
-                *left = 0;
-            }
-        }
-        else //b가 0 이하, a 양수인 경우
-        {
+}
 
-            *top = a;
-            *left = width + b;
-        }
+void printMenu(const char *fileName) {
+    printLine();
+    if (strcmp(fileName, "") == 0) {
+        printf("[1] 이미지 불러오기\n");
+    } else {
+        printf("[1] 이미지 변경 - 현재 이미지: %s\n", fileName);
     }
-    else//a가 음수인 경우
-    {
-        if (b >= 0)
-        {
-            *right = b;
-            *left = width + a;
-        }
-        else//둘다 음수인 경우
-        {
-            if (a < b)
-            {
-                *left = 0;
-                *right = width + a;
-            }
-            else
-            {
-                *left = 0;
-                *right = width + b;
-            }
-        }
+    printf("[2] 이미지 정합(SSD)\n[3] 이미지 정합(NCC)\n[4] 종료\n");
+    printLine();
+    printf("메뉴 선택> ");
+}
+
+void printLine() {
+    printf("===================\n");
+}
+
+int free_pixel(IMG* img){
+    int i = 0, j = 0;
+    if (img->pixel == NULL){
+        return 0;
     }
+    for (i = 0; i < 3; i++){
+        for(j = 0; j < img->height; j++){ // width 크기 free
+            free(img->pixel[i][j]);
+        }
+        free(img->pixel[i]); // height 크기 free
+    }
+    free(img->pixel); // 채널 3개 크기 free
+    return 1;
+}
+
+int swap(int *a, int *b) { // int 값 2개 스왑.
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
+    return 1;
 }
