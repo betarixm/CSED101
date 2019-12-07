@@ -5,6 +5,20 @@
 #include <string.h>
 #include "set.h"
 
+int exeuter(int (*f)(Set*, int), Set* baseSet, char* setName, int target){
+    Set* set = getSetByName(baseSet, setName);
+    if(set != 0){
+        return f(set, target);
+    }
+    return 0;
+}
+
+int clearSetIn(Set* baseSet, char* setName){
+    Set* set = getSetByName(baseSet, setName);
+    if(set == 0) return 0;
+    return clearSet(baseSet, set);
+}
+
 Element* maxElement(Element* a, Element*b){
     if (a == NULL && b != NULL) return b;
     else if (a != NULL && b == NULL) return a;
@@ -12,22 +26,46 @@ Element* maxElement(Element* a, Element*b){
     else return (a->data >= b->data)?(a):(b);
 }
 
-int isDisjoint(Set* baseSet, char* setName_1, char* setName_2){
-    int tmp;
-    Set* resultSet = setInter(baseSet, setName_1, setName_2, "tmpa");
+int isValidName(Set* baseSet, char* setName){
+    Set* set;
+    for(set = baseSet->next; set != NULL; set = set->next){
+        if(strcmp(set->set_name, setName) == 0) return 0;
+    }
+    return 1;
+}
+
+void makeUniqName(Set* baseSet, char* setName){
+    int i = 0;
+    do{
+        i = 0;
+        while(i < 20 && (setName[i++] = (char)(rand() % 90 + 33)));
+    } while(!isValidName(baseSet, setName));
+}
+
+int isSubset(Set* baseSet, char* setName_1, char* setName_2){
+    int tmp = 0;
+    char setName[31] = "";
+    makeUniqName(baseSet, setName);
+    Set* resultSet = setDiff(baseSet, setName_1, setName_2, setName);
+    if(resultSet == 0) return 0;
     tmp = (resultSet->set_size == 0);
-    clearSet(baseSet, "tmpa");
+    clearSet(baseSet, resultSet);
     return tmp;
 }
-void swapSet(Set** a, Set** b){
-    Set* tmp = *a;
-    *a = *b;
-    *b = tmp;
+
+int isDisjoint(Set* baseSet, char* setName_1, char* setName_2){
+    int tmp;
+    char setName[31] = "";
+    makeUniqName(baseSet, setName);
+    Set* resultSet = setInter(baseSet, setName_1, setName_2, setName);
+    if(resultSet == 0) return 0;
+    tmp = (resultSet->set_size == 0);
+    clearSet(baseSet, resultSet);
+    return tmp;
 }
 
 Set* setDiff(Set* baseSet, char* srcName, char* targetName, char*resultName){
-    int isLarger =0;
-    Set* srcSet = findSetbyName(baseSet, srcName), *targetSet = findSetbyName(baseSet, targetName), *resultSet;
+    Set* srcSet = getSetByName(baseSet, srcName), *targetSet = getSetByName(baseSet, targetName), *resultSet;
     Element *srcEle, *targetEle;
     if((srcSet == 0) || (targetSet == 0)) return 0;
     targetEle = targetSet->ele_head;
@@ -43,25 +81,24 @@ Set* setDiff(Set* baseSet, char* srcName, char* targetName, char*resultName){
 }
 
 Set* setInter(Set* baseSet, char* srcName, char* targetName, char* resultName){
-    Set* srcSet = findSetbyName(baseSet, srcName), *targetSet = findSetbyName(baseSet, targetName), *resultSet;
-    Element *eleSrc, *eleTarget;
+    Set* srcSet = getSetByName(baseSet, srcName), *targetSet = getSetByName(baseSet, targetName), *resultSet;
+    Element *srcEle, *targetEle;
     if((srcSet == 0) || (targetSet == 0)) return 0;
-    if(targetSet->set_size <= srcSet->set_size) swapSet(&srcSet, &targetSet);
-    eleTarget = targetSet->ele_head;
+    targetEle = targetSet->ele_head;
     resultSet = appendSet(baseSet, resultName);
-    for(eleSrc = srcSet->ele_head; eleSrc != NULL; eleSrc = eleSrc->next){
-        for(; eleTarget != NULL; eleTarget = eleTarget->next){
-            if(eleSrc->data == eleTarget->data){
-                addElement(resultSet, eleSrc->data);
-                break;
-            }
-        }
+
+    for(srcEle = srcSet->ele_head; srcEle!=NULL; srcEle = srcEle->next){
+        while(targetEle->next != NULL && targetEle->data < srcEle->data) targetEle = targetEle->next;
+        if(srcEle->data == targetEle->data)
+            addElement(resultSet, srcEle->data);
     }
+
     return resultSet;
+
 }
 
-Set * setUnion(Set* baseSet, char* targetName_1, char* targetName_2, char* resultName){
-    Set* targetSet_1 = findSetbyName(baseSet, targetName_1), *targetSet_2 = findSetbyName(baseSet, targetName_2), *resultSet;
+Set* setUnion(Set* baseSet, char* targetName_1, char* targetName_2, char* resultName){
+    Set* targetSet_1 = getSetByName(baseSet, targetName_1), *targetSet_2 = getSetByName(baseSet, targetName_2), *resultSet;
     Element* ele1, *ele2, *maxEle;
     if((targetSet_1 == 0) || (targetSet_2 == 0)) return 0;
     ele1 = targetSet_1->ele_head;
@@ -81,21 +118,6 @@ Set * setUnion(Set* baseSet, char* targetName_1, char* targetName_2, char* resul
     return resultSet;
 }
 
-int isElementIn(Set* baseSet, char* setName, int target){
-    Set* set = findSetbyName(baseSet, setName);
-    if(set != 0){
-        return isElement(set, target);
-    }
-    return 0;
-}
-
-int popElementIn(Set* baseSet, char* setName, int target){
-    Set* set = findSetbyName(baseSet, setName);
-    if(set != 0){
-        popElement(set, target);
-    }
-}
-
 int isElement(Set* set, int target){
     Element* e = set->ele_head;
     while(e != NULL){
@@ -105,13 +127,6 @@ int isElement(Set* set, int target){
         e = e->next;
     }
     return 0;
-}
-
-int addElementIn(Set* baseSet, char* setName, int data){
-    Set* set = findSetbyName(baseSet, setName);
-    if(set != 0){
-        addElement(set, data);
-    }
 }
 
 int addElement(Set* set, int data){
@@ -138,6 +153,7 @@ int addElement(Set* set, int data){
         }
         (set->set_size)++;
     }
+    return 1;
 }
 
 int popElement(Set* set, int data){
@@ -159,13 +175,13 @@ int popElement(Set* set, int data){
         }
     }
     (set->set_size)--;
-
+    return 1;
 }
 
 int addSet(Set *baseSet, FILE *fp) {
     int i = 0, setSize = 0, tmp = 0;
     char setName[21] = "";
-    Set* newSet, *prevSet = baseSet;
+    Set* newSet;
 
     fscanf(fp, "%s", setName);
     fscanf(fp, "%d", &(setSize));
@@ -178,9 +194,10 @@ int addSet(Set *baseSet, FILE *fp) {
         }
     }
 
+    return 1;
 }
 
-int showSet(Set *baseSet, char *setName) {
+void showSet(Set *baseSet, char *setName) {
     Set* setTarget = baseSet->next;
     int isPrint;
     while(setTarget != NULL){
@@ -198,15 +215,17 @@ int showElements(Set *set){
         eleTarget = eleTarget->next;
     }
     printf("\n");
+
+    return 1;
 }
 
-int initSet(Set *set){
+void initSet(Set *set){
     set->set_size = 0;
     set->next = NULL;
     set->ele_head = NULL;
 }
 
-int clearElements(Element* baseEle){
+void clearElements(Element* baseEle){
     Element* cur = baseEle;
     Element* tmp;
     while(cur != NULL){
@@ -216,29 +235,7 @@ int clearElements(Element* baseEle){
     }
 }
 
-int clearSet(Set* baseSet, char* setName){
-    Set* cur = baseSet->next;
-    Set* tmp;
-
-    if(strcmp(cur->set_name, setName) == 0){
-        tmp = baseSet->next;
-        baseSet->next = tmp->next;
-        clearElements(cur->ele_head);
-        free(cur);
-    } else {
-        while(cur != NULL && cur->next != NULL){
-            if(strcmp(cur->next->set_name, setName) == 0){
-                tmp = cur->next;
-                cur->next = tmp->next;
-                clearElements(tmp->ele_head);
-                free(tmp);
-            }
-            cur = cur->next;
-        }
-    }
-}
-
-int clearSetWithAdd(Set* baseSet, Set* set){
+int clearSet(Set* baseSet, Set* set){
     Set* cur = baseSet->next;
     Set* tmp;
     if(set == baseSet->next){
@@ -246,6 +243,7 @@ int clearSetWithAdd(Set* baseSet, Set* set){
         baseSet->next = tmp->next;
         clearElements(tmp->ele_head);
         free(tmp);
+        return 1;
     } else {
         while(cur->next != NULL){
             if(cur->next == set){
@@ -253,14 +251,25 @@ int clearSetWithAdd(Set* baseSet, Set* set){
                 cur->next = tmp->next;
                 clearElements(tmp->ele_head);
                 free(tmp);
-                break;
+                return 1;
             }
             cur = cur->next;
         }
     }
+    return 0;
 }
 
-Set* findSetbyName(Set* baseSet, char* setName){
+void clearAllSet(Set* baseSet){
+    Set* set = baseSet->next, *tmp;
+    while(set != NULL){
+        tmp = set->next;
+        clearElements(set->ele_head);
+        free(set);
+        set = tmp;
+    }
+}
+
+Set* getSetByName(Set* baseSet, char* setName){
     Set* cur = baseSet->next;
     while(cur != NULL){
         if(strcmp(cur->set_name, setName) == 0){
@@ -273,7 +282,7 @@ Set* findSetbyName(Set* baseSet, char* setName){
 
 Set* appendSet(Set* baseSet, char*setName){
     Set* newSet, *prevSet = baseSet;
-    if(findSetbyName(baseSet, setName) != 0){
+    if(getSetByName(baseSet, setName) != 0){
         return 0;
     } else {
         newSet = (Set*)malloc(sizeof(Set));
