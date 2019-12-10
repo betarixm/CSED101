@@ -1,208 +1,168 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include<stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include<stdlib.h>
+#include<string.h>
+
 typedef struct ele
 {
     int data;
     struct ele* next;
 } Element;
-
 typedef struct set
 {
     char set_name[21];
     int set_size;
     Element* ele_head;
-    Element* ele_tail;
     struct set* next;
 } Set;
 
-typedef struct set_Info {
-    Set* head;
-    Set* tail;
-    int cnt;
-}S_Info;
-
-void init_set(Set* p_set);
-void set(FILE* Input, S_Info* Info);
-Element* swap_element(Element* p_cur, Element* p_next);
-void Sort(Set* p_set);
-void show(FILE* Input, S_Info* Info);
-void check_Dupele(Set* p_set);
-
-
-void init_set(Set* p_set) {
-    p_set->ele_head = NULL;
-    p_set->ele_tail = NULL;
-    p_set->next = NULL;
-}
-
-void set(FILE* Input, S_Info* Info) {
-
-    Set* p_set = (Set*)malloc(sizeof(Set));
-    Element* temp;
-    Set* tempSet;
-
-    init_set(p_set);
-    fscanf(Input, "%s%d", p_set->set_name, &p_set->set_size);
-
-    if(Info->cnt == 0) {
-        Info->head = p_set;
-        Info->tail = p_set;
-    } else {
-        for (tempSet = Info->head; tempSet != NULL; tempSet = tempSet->next) {
-            if (!strcmp(tempSet->set_name, p_set->set_name)) {
-                free(p_set);
-                return;
-            } 
-            if(tempSet == Info->tail){
-                Info->tail->next = p_set;
-                Info->tail = p_set;
-                break;
+void setfunc(Set* head, FILE* infile);
+void showfunc(Set* head, FILE* infile);
+int is_element(Set* head, FILE* infile);
+void addfunc(Set* head, FILE* infile);
+void addprofunc(Set* ntemp, int nn);
+void popfunc(Set* head, FILE* infile);
+void clearfunc(Set* head, FILE* infile);
+void freeele(Element* etemp);
+void quitfunc(Set* head);
+void unionfunc(Set* head, FILE* infile);
+int check_addSet(Set* head, Set** atemp, Set** btemp, Set** ctemp, char* icn, FILE* infile);
+int main(int argc, char** argv)
+{
+    if (argc < 3)
+    {
+        Set* hset = (Set*)malloc(sizeof(Set));
+        hset->set_size = 0;
+        hset->next = NULL;
+        char cmd[11] = " ";
+        while (strcmp(cmd, "quit") != 0)
+        {
+            fprintf(stdout, ">> ");
+            fscanf(stdin, "%s", cmd);
+            if (strcmp(cmd, "set") == 0)
+            {
+                setfunc(hset, stdin);
             }
-        }
-    }
-
-    Info->cnt++;
-
-    for (int i = 0; i < p_set->set_size; i++) {
-
-        temp = (Element*)malloc(sizeof(Element));
-        fscanf(Input, "%d", &temp->data);
-        temp->next = NULL;
-
-        if (i == 0)
-            p_set->ele_head = temp;
-        else
-            p_set->ele_tail->next = temp;
-
-        p_set->ele_tail = temp;
-    }
-
-    Sort(p_set);
-    check_Dupele(p_set);
-
-    return;
-}
-
-Element* swap_element(Element* p_cur, Element* p_next) {
-    Element* temp = p_next->next;
-    p_next->next = p_cur;
-    p_cur->next = temp;
-    return p_next;
-}
-
-void Sort(Set* p_set) {
-    int cnt;
-    Element *prev, *cur, *next, *head;
-
-    for (int i = 0; i < p_set->set_size; i++) {
-        prev = p_set->ele_head;
-        head = p_set->ele_head;
-        cnt = 0;
-        for (int j = i; j < p_set->set_size - 1; j++) {
-            cur = head;
-            next = cur->next;
-            if (cur->data > next->data) {
-                head = swap_element(cur, next);
-                if (j == i) {
-                    p_set->ele_head = head;
-                    prev = p_set->ele_head;
+            else if (strcmp(cmd, "show") == 0)
+            {
+                showfunc(hset, stdin);
+            }
+            else if (strcmp(cmd, "is_element") == 0)
+            {
+                int isen = is_element(hset, stdin);
+                if (isen != -1)
+                {
+                    fprintf(stdout, "%d\n", isen);
                 }
-                else
-                    prev->next = head;
-                cnt++;
             }
-            head = head->next;
-            if (j != i)
-                prev = prev->next;
-        }
-        if (cnt == 0)
-            break;
-    }
-}
-
-void show(FILE* Input, S_Info* Info) {
-    char set_name[21] = "";
-    char* name;
-    fgets(set_name, 21, Input);
-
-    if (set_name[0] == '\n') {
-        for (Set* temp = Info->head; temp; temp = temp->next) {
-            fprintf(stdout, "%s :", temp->set_name);
-            for (Element* ele_temp = temp->ele_head; ele_temp; ele_temp = ele_temp->next) {
-                fprintf(stdout, " %d", ele_temp->data);
+            else if (strcmp(cmd, "add") == 0)
+            {
+                addfunc(hset, stdin);
             }
-            printf("\n");
-        }
-    }
-    else {
-        name = strtok(set_name, " ");
-        strtok(name, "\n");
-        for (Set* temp = Info->head; temp; temp = temp->next) {
-            if (strcmp(name, temp->set_name) == 0) {
-                fprintf(stdout, "%s :", temp->set_name);
-                for (Element* ele_temp = temp->ele_head; ele_temp; ele_temp = ele_temp->next)
-                    fprintf(stdout, " %d", ele_temp->data);
+            else if (strcmp(cmd, "pop") == 0)
+            {
+                popfunc(hset, stdin);
+            }
+            else if (strcmp(cmd, "clear") == 0)
+            {
+                clearfunc(hset, stdin);
+            }
+            else if (strcmp(cmd, "union") == 0)
+            {
+                unionfunc(hset, stdin);
             }
         }
-        printf("\n");
-    }
-}
-
-void check_Dupele(Set* p_set) {
-    Element* temp, * bf_temp = p_set->ele_head;
-
-    if (p_set->ele_head == NULL)
-        return;
-
-    for (temp = p_set->ele_head->next; temp; ) {
-        if (temp->data == bf_temp->data) {
-            bf_temp->next = temp->next;
-            free(temp);
-            temp = bf_temp->next;
-            p_set->set_size--;
-        }
-        else {
-            bf_temp = bf_temp->next;
-            temp = temp->next;
+        if (strcmp(cmd, "quit") == 0)
+        {
+            if (hset->set_size > 0)
+            {
+                quitfunc(hset->next);
+            }
+            free(hset);
         }
     }
 }
 
-int main(int argc, char** Argv) {
-    char command[20], file_Name[30];
-    S_Info Info = {NULL, NULL, 0};
-    FILE* Input = stdin;
 
-    while (1) {
-        printf(">> ");
-        fscanf(Input, "%s", command);
+int check_addSet(Set* head, Set** atemp, Set** btemp, Set** ctemp, char* icn, FILE* infile)
+{
+    char a_name[21] = { 0 };
+    char b_name[21] = { 0 };
+    char c_name[21] = { 0 };
 
-        if (strcmp(command, "set") == 0) {
-            set(Input, &Info);
+    fscanf(infile, "%s", a_name);
+    fscanf(infile, "%s", b_name);
+    fscanf(infile, "%s", c_name);
+    *atemp = head;
+    while (*atemp != NULL)
+    {
+        if (strcmp((*atemp)->set_name, a_name) == 0)
+        {
+            break;
         }
-
-        else if (strcmp(command, "show") == 0)
-            show(Input, &Info);
-
-        else if (strcmp(command, "is_element") == 0)
-            break;
-
-        else if (strcmp(command, "add") == 0)
-            break;
-
-        else if (strcmp(command, "pop") == 0)
-            break;
-
-        else if (strcmp(command, "clear") == 0)
-            break;
-
-        else if (strcmp(command, "quit") == 0)
-            break;
-
-        printf("\n");
+        *atemp = (*atemp)->next;
     }
+    if (*atemp == NULL)
+    {
+        return 0;
+    }
+    *btemp = head;
+    while (*btemp != NULL)
+    {
+        if (strcmp((*btemp)->set_name, b_name) == 0)
+        {
+            break;
+        }
+        *btemp = (*btemp)->next;
+    }
+    if (*btemp == NULL)
+    {
+        return 0;
+    }
+    *ctemp = head;
+    while ((*ctemp)->next != NULL)
+    {
+        if (strcmp((*ctemp)->set_name, c_name) == 0)
+        {
+            return 0;
+        }
+        *ctemp = (*ctemp)->next;
+    }
+    return 1;
 
-    return 0;
 }
+
+void unionfunc(Set* head, FILE* infile)
+{
+    char icn[21];
+    Set* atemp = head;
+    Set* btemp = head;
+    Set* ctemp = head;
+    int i, j;
+    if (check_addSet(head, &atemp, &btemp, &ctemp, icn, infile))
+    {
+        Element* aetemp = atemp->ele_head->next;
+        Element* betemp = btemp->ele_head->next;
+        Set* cset = (Set*)malloc(sizeof(Set));
+        ctemp->next = cset;
+        cset->next = NULL;
+        strcpy(cset->set_name, icn);
+        Element* ehead = (Element*)malloc(sizeof(Element));
+        ehead->data = 0;
+        ehead->next = NULL;
+        cset->ele_head = ehead;
+        for (i = 0; i < atemp->set_size; i++)
+        {
+            addprofunc(cset, aetemp->data);
+            aetemp = aetemp->next;
+        }
+        for (j = 0; j < btemp->set_size; j++)
+        {
+            addprofunc(cset, betemp->data);
+            betemp = betemp->next;
+        }
+        cset->set_size = ehead->data;
+        head->set_size++;
+    }
+}
+
