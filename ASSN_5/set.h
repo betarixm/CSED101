@@ -1,16 +1,18 @@
-#pragma once
+#pragma once // 한번만 컴파일 되고 포함되도록 pragma once 자것ㅇ
 
-typedef struct ele {
-    int data;
-    struct ele *next;
+typedef struct ele { // element 구조체
+    int data; // 데이터
+    struct ele *next; // 다음 element를 가리킴
 } Element;
 
-typedef struct set {
-    char set_name[21];
-    int set_size;
-    Element *ele_head;
-    struct set *next;
+typedef struct set { // set 구조체
+    char set_name[21]; // set 이름
+    int set_size; // set의 element 개수
+    Element *ele_head; // set의 첫 element 주소
+    struct set *next; // 다음 set 주소
 } Set;
+
+// 함수 프로토타입 선언
 
 void addSet(Set *baseSet, FILE *fp);
 
@@ -49,3 +51,5 @@ int isSubset_Disjoint(Set *baseSet, char *setName_1, char *setName_2, int isSub)
 void makeUniqName(Set *baseSet, char *setName);
 
 Element ** minElement(Element **a, Element **b);
+
+void printResult(int result);
