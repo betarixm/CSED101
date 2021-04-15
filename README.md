@@ -3,6 +3,7 @@
 [![CSED101@POSTECH](https://img.shields.io/badge/Fall-2019-775E64)](https://www.postech.ac.kr/eng)
 
  **Programming & Problem Solving** is a basic programing class of POSTECH, using C.
+ **프로그래밍과 문제해결**은 포스텍의 C를 이용하는 가장 기초적인 프로그래밍 수업입니다. 
 
 ## Assignments
 ### Basic IO & Calculation
